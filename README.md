@@ -1,4 +1,4 @@
-# Patchbay
+# Vocalis
 
 Open-source visual voice agent builder. Patch STT, LLM and TTS providers together
 like cables on an audio patchbay, test calls in the browser, and see live latency
@@ -22,7 +22,7 @@ with one command.
 | `dashboard/` | Next.js canvas and test-call UI                                |
 | `schema/`    | JSON Schema for agent configs (source of truth, shared by both) |
 | `providers/` | Provider plugins (Python adapter + node schema + icon)         |
-| `cli/`       | `patchbay run agent.json`                                      |
+| `cli/`       | `vocalis run agent.json`                                       |
 | `deploy/`    | `docker-compose.yml`                                           |
 
 ## Stack
@@ -48,6 +48,17 @@ Copy the template and fill in the providers you use:
 
 ```bash
 cp .env.example .env
+```
+
+## Development
+
+Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+uv sync                      # install the workspace
+uv run pytest                # run the tests
+uv run ruff check .          # lint
+uv run schema/validate.py    # check examples against the schema
 ```
 
 ## License
