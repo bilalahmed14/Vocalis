@@ -1,0 +1,48 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "whisper",
+  "type": "stt",
+  "name": "Whisper (local)",
+  "description": "Runs Whisper on your machine with faster-whisper. No API key; the model downloads on first use. Transcribes each utterance once the VAD marks it finished. Install with: uv sync --extra whisper",
+  "docs_url": "https://github.com/SYSTRAN/faster-whisper",
+  "env": [],
+  "requires": { "module": "faster_whisper", "extra": "whisper" },
+  "needs_vad": true,
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "description": "A Whisper size or a Hugging Face CTranslate2 model id. Bigger is more accurate and slower.",
+        "type": "string",
+        "default": "Systran/faster-distil-whisper-medium.en",
+        "examples": ["tiny", "base", "small", "medium", "large-v3", "Systran/faster-distil-whisper-medium.en"]
+      },
+      "language": {
+        "title": "Language",
+        "type": "string",
+        "default": "en"
+      },
+      "device": {
+        "title": "Device",
+        "enum": ["auto", "cpu", "cuda"],
+        "default": "auto"
+      },
+      "compute_type": {
+        "title": "Compute type",
+        "description": "Weight precision. int8 is fastest on CPU.",
+        "enum": ["default", "int8", "int8_float16", "float16", "float32"],
+        "default": "default"
+      },
+      "no_speech_prob": {
+        "title": "No-speech threshold",
+        "description": "Segments more likely than this to be non-speech are dropped.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.4
+      }
+    }
+  }
+}

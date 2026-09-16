@@ -1,0 +1,32 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "anthropic",
+  "type": "llm",
+  "name": "Anthropic",
+  "description": "Claude models from Anthropic.",
+  "docs_url": "https://docs.claude.com/en/docs/about-claude/models/overview",
+  "env": ["ANTHROPIC_API_KEY"],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "default": "claude-opus-5",
+        "examples": ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"]
+      },
+      "effort": {
+        "title": "Effort",
+        "description": "How much the model thinks before answering. Lower effort starts speaking sooner. Not supported by claude-haiku-4-5.",
+        "enum": ["low", "medium", "high", "xhigh", "max"]
+      },
+      "max_tokens": {
+        "title": "Max tokens",
+        "description": "Upper bound on the length of each reply.",
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  }
+}

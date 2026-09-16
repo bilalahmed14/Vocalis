@@ -23,6 +23,7 @@ from typing import Any, Protocol
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 from pipecat.processors.frame_processor import FrameProcessor
+from pipecat.transcriptions.language import Language
 
 from vocalis.config import Node
 from vocalis.paths import providers_dir
@@ -49,6 +50,18 @@ class Adapter(Protocol):
     def __call__(self, params: dict[str, Any], ctx: BuildContext) -> FrameProcessor: ...
 
 
+def language(code: str) -> Language | str:
+    """Turn a language param into what Pipecat services expect.
+
+    Known codes ("en", "en-US") become `Language` values, which each service maps to
+    its own format; anything else (e.g. Deepgram's "multi") is passed through as-is.
+    """
+    try:
+        return Language(code)
+    except ValueError:
+        return code
+
+
 @dataclass(frozen=True)
 class ProviderSpec:
     id: str
@@ -57,6 +70,8 @@ class ProviderSpec:
     path: Path
     params_schema: Mapping[str, Any]
     env: tuple[str, ...] = ()
+    requires: Mapping[str, str] | None = None
+    needs_vad: bool = False
     description: str = ""
     docs_url: str | None = None
 
@@ -72,6 +87,12 @@ class ProviderSpec:
 
     def missing_env(self, env: Mapping[str, str]) -> list[str]:
         return [name for name in self.env if not env.get(name)]
+
+    def install_hint(self) -> str | None:
+        """The command to install this provider's optional dependency, if it's missing."""
+        if not self.requires or importlib.util.find_spec(self.requires["module"]) is not None:
+            return None
+        return f"uv sync --extra {self.requires['extra']}"
 
     def load_adapter(self) -> Adapter:
         file = self.path / "adapter.py"
@@ -156,6 +177,8 @@ def _load_spec(manifest_path: Path) -> ProviderSpec:
         path=folder,
         params_schema=manifest["params"],
         env=tuple(manifest.get("env", [])),
+        requires=manifest.get("requires"),
+        needs_vad=manifest.get("needs_vad", False),
         description=manifest.get("description", ""),
         docs_url=manifest.get("docs_url"),
     )

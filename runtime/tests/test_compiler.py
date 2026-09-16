@@ -7,7 +7,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 )
 from pipecat.processors.frame_processor import FrameProcessor
 
-from conftest import write_provider
+from helpers import write_provider
 from vocalis import ConfigError, ProviderRegistry, compile_agent, parse_config, validate
 
 
@@ -120,3 +120,28 @@ def test_adapter_failure_points_at_node(config, providers_root, env):
     issues = compile_issues(config, ProviderRegistry.from_directory(providers_root), env)
 
     assert issues == ['node "tts": Broken failed to build: bad voice']
+
+
+def test_provider_that_needs_vad(config, providers_root, env):
+    write_provider(
+        providers_root,
+        "stt",
+        "segmented",
+        manifest={
+            "id": "segmented",
+            "type": "stt",
+            "name": "Segmented",
+            "needs_vad": True,
+            "params": {"type": "object"},
+        },
+    )
+    registry = ProviderRegistry.from_directory(providers_root)
+    config["nodes"][1]["provider"] = "segmented"
+
+    assert validate(parse_config(config), registry) == []
+
+    config["nodes"].pop(0)
+    config["edges"].pop(0)
+    assert [str(i) for i in validate(parse_config(config), registry)] == [
+        'node "stt": Segmented needs a vad node before it to know when speech ends'
+    ]

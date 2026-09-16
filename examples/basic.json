@@ -8,7 +8,7 @@
       "id": "vad",
       "type": "vad",
       "provider": "silero",
-      "params": { "stop_secs": 0.5 }
+      "params": {}
     },
     {
       "id": "stt",

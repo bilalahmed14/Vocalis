@@ -5,7 +5,7 @@ like cables on an audio patchbay, test calls in the browser, and see live latenc
 per node. Built on [Pipecat](https://github.com/pipecat-ai/pipecat). Self-hostable
 with one command.
 
-> **Status:** early development. Phase 1 (engine, no UI) is in progress.
+> **Status:** early development. Phase 1 (engine and CLI) is done; the canvas is next.
 
 ## Principles
 
@@ -41,21 +41,39 @@ with one command.
 5. **Audio lab nodes:** noise suppression, VAD tuning, gain, scopes
 6. **Ship:** `docker compose up`, examples, contributor guide, CI
 
-## Configuration
-
-API keys are read from environment variables, never from agent configs.
-Copy the template and fill in the providers you use:
-
-```bash
-cp .env.example .env
-```
-
-## Development
+## Quickstart
 
 Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync                      # install the workspace
+uv sync
+cp .env.example .env      # add keys for the providers your agent uses
+uv run vocalis run examples/basic.json
+```
+
+`examples/basic.json` uses Deepgram, OpenAI and Cartesia, so it needs those three
+keys. Speak into your mic (headphones recommended) and press Ctrl+C to hang up. API
+keys are only ever read from the environment, never from agent configs.
+
+Other commands: `vocalis validate <agent.json>`, `vocalis providers`,
+`vocalis devices`. See [cli/README.md](cli/README.md).
+
+## Providers
+
+| Stage | Providers                                  |
+| ----- | ------------------------------------------ |
+| VAD   | Silero (local)                             |
+| STT   | Deepgram, Whisper (local, `uv sync --extra whisper`) |
+| LLM   | OpenAI (and OpenAI-compatible), Anthropic, Groq |
+| TTS   | ElevenLabs, Cartesia                       |
+
+Adding one takes a folder with a manifest, an adapter and an icon; see
+[providers/README.md](providers/README.md).
+
+## Development
+
+```bash
+uv sync --all-extras         # install the workspace, including local Whisper
 uv run pytest                # run the tests
 uv run ruff check .          # lint
 uv run schema/validate.py    # check examples against the schema

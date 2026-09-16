@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "silero",
+  "type": "vad",
+  "name": "Silero VAD",
+  "description": "Local voice activity detection. Runs on CPU with no API key.",
+  "docs_url": "https://github.com/snakers4/silero-vad",
+  "env": [],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "confidence": {
+        "title": "Confidence",
+        "description": "Minimum speech probability for an audio frame to count as speech.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.7
+      },
+      "start_secs": {
+        "title": "Start delay (s)",
+        "description": "How long speech must last before the user counts as speaking.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 0.2
+      },
+      "stop_secs": {
+        "title": "Stop delay (s)",
+        "description": "How long silence must last before the user counts as stopped. Turn-end detection runs on top of this, so keep it short.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 3,
+        "default": 0.2
+      },
+      "min_volume": {
+        "title": "Minimum volume",
+        "description": "Audio quieter than this is never treated as speech.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.6
+      }
+    }
+  }
+}

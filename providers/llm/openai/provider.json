@@ -1,0 +1,39 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "openai",
+  "type": "llm",
+  "name": "OpenAI",
+  "description": "OpenAI chat models. Also works with any OpenAI-compatible server through base_url.",
+  "docs_url": "https://platform.openai.com/docs/models",
+  "env": ["OPENAI_API_KEY"],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "default": "gpt-4.1-mini",
+        "examples": ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"]
+      },
+      "temperature": {
+        "title": "Temperature",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "max_tokens": {
+        "title": "Max tokens",
+        "description": "Upper bound on the length of each reply.",
+        "type": "integer",
+        "minimum": 1
+      },
+      "base_url": {
+        "title": "Base URL",
+        "description": "Point at an OpenAI-compatible API instead of api.openai.com.",
+        "type": "string",
+        "format": "uri"
+      }
+    }
+  }
+}

@@ -19,7 +19,7 @@ from pipecat.transports.base_transport import BaseTransport
 from vocalis.config import AgentConfig, Node
 from vocalis.graph import order_chain
 from vocalis.issues import ConfigError, Issue
-from vocalis.providers import BuildContext, ProviderRegistry
+from vocalis.providers import BuildContext, ProviderError, ProviderRegistry
 from vocalis.schema import describe, pointer
 
 
@@ -75,7 +75,7 @@ def compile_agent(
 
     chain, issues = order_chain(config)
     issues += _provider_issues(config, registry)
-    issues += _env_issues(config, registry, env)
+    issues += _install_issues(config, registry, env)
     if issues:
         raise ConfigError(issues)
 
@@ -83,9 +83,11 @@ def compile_agent(
     for node in chain:
         spec = registry.get(node.type, node.provider)
         assert spec is not None  # checked by _provider_issues
-        adapter = spec.load_adapter()
         try:
+            adapter = spec.load_adapter()
             processor = adapter(spec.with_defaults(node.params), BuildContext(node=node, env=env))
+        except ProviderError:
+            raise
         except Exception as e:
             raise ConfigError([Issue(f"{spec.name} failed to build: {e}", node_id=node.id)]) from e
         compiled.append(CompiledNode(node=node, processor=processor))
@@ -101,6 +103,7 @@ def compile_agent(
 
 def _provider_issues(config: AgentConfig, registry: ProviderRegistry) -> list[Issue]:
     issues = []
+    has_vad = any(node.type == "vad" for node in config.nodes)
     for i, node in enumerate(config.nodes):
         spec = registry.get(node.type, node.provider)
         if spec is None:
@@ -114,6 +117,14 @@ def _provider_issues(config: AgentConfig, registry: ProviderRegistry) -> list[Is
                 )
             )
             continue
+        if spec.needs_vad and not has_vad:
+            issues.append(
+                Issue(
+                    f"{spec.name} needs a vad node before it to know when speech ends",
+                    node_id=node.id,
+                    node_index=i,
+                )
+            )
         for error in spec.params_validator.iter_errors(node.params):
             field = ["params", *error.absolute_path]
             issues.append(
@@ -127,18 +138,25 @@ def _provider_issues(config: AgentConfig, registry: ProviderRegistry) -> list[Is
     return issues
 
 
-def _env_issues(
+def _install_issues(
     config: AgentConfig, registry: ProviderRegistry, env: Mapping[str, str]
 ) -> list[Issue]:
+    """Secrets and optional dependencies: everything needed to actually build a node."""
     issues = []
     for i, node in enumerate(config.nodes):
         spec = registry.get(node.type, node.provider)
-        for name in spec.missing_env(env) if spec else ():
+        if spec is None:
+            continue
+        for name in spec.missing_env(env):
             issues.append(
                 Issue(
                     f"{spec.name} needs the {name} environment variable (add it to .env)",
                     node_id=node.id,
                     node_index=i,
                 )
+            )
+        if hint := spec.install_hint():
+            issues.append(
+                Issue(f"{spec.name} isn't installed; run: {hint}", node_id=node.id, node_index=i)
             )
     return issues

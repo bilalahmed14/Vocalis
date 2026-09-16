@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["runtime"]
+members = ["runtime", "cli"]
 
 [dependency-groups]
 dev = [
@@ -8,7 +8,8 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["runtime/tests"]
+testpaths = ["runtime/tests", "providers", "cli/tests"]
+pythonpath = ["runtime/tests", "providers"]
 addopts = "-ra"
 
 [tool.ruff]
@@ -19,4 +20,4 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["vocalis", "conftest"]
+known-first-party = ["vocalis", "vocalis_cli", "helpers", "provider_testing"]

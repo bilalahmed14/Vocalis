@@ -7,7 +7,15 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "jsonschema>=4.23",
-    "pipecat-ai>=1.10,<2",
+    "pipecat-ai[anthropic,cartesia,deepgram,elevenlabs,groq,openai,silero]>=1.10,<2",
+]
+
+[project.optional-dependencies]
+# Local Whisper pulls in CTranslate2 and downloads model weights, so it's opt-in.
+# On Apple Silicon, Pipecat's Whisper module also imports mlx-whisper.
+whisper = [
+    "pipecat-ai[whisper]>=1.10,<2",
+    "pipecat-ai[mlx-whisper]>=1.10,<2; sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
 
 [build-system]

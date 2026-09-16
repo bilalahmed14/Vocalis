@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "groq",
+  "type": "llm",
+  "name": "Groq",
+  "description": "Open-weight models on Groq's low-latency inference.",
+  "docs_url": "https://console.groq.com/docs/models",
+  "env": ["GROQ_API_KEY"],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "default": "llama-3.3-70b-versatile",
+        "examples": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "openai/gpt-oss-120b"]
+      },
+      "temperature": {
+        "title": "Temperature",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "max_tokens": {
+        "title": "Max tokens",
+        "description": "Upper bound on the length of each reply.",
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  }
+}

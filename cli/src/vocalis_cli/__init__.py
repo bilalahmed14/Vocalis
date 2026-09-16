@@ -1,0 +1,1 @@
+"""Vocalis command line interface."""

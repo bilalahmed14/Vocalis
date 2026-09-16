@@ -1,0 +1,48 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "elevenlabs",
+  "type": "tts",
+  "name": "ElevenLabs",
+  "description": "Streaming text to speech over a websocket.",
+  "docs_url": "https://elevenlabs.io/docs/models",
+  "env": ["ELEVENLABS_API_KEY"],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["voice_id"],
+    "properties": {
+      "voice_id": {
+        "title": "Voice ID",
+        "description": "Copy it from the ElevenLabs voice library.",
+        "type": "string",
+        "minLength": 1,
+        "examples": ["21m00Tcm4TlvDq8ikWAM"]
+      },
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "default": "eleven_flash_v2_5",
+        "examples": ["eleven_flash_v2_5", "eleven_turbo_v2_5", "eleven_multilingual_v2"]
+      },
+      "stability": {
+        "title": "Stability",
+        "description": "Higher is more consistent, lower is more expressive.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "similarity_boost": {
+        "title": "Similarity boost",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "speed": {
+        "title": "Speed",
+        "type": "number",
+        "minimum": 0.7,
+        "maximum": 1.2
+      }
+    }
+  }
+}

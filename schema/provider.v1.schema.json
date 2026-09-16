@@ -41,6 +41,27 @@
       },
       "default": []
     },
+    "requires": {
+      "description": "An optional dependency the provider needs. The compiler refuses to build the node while the module is missing, and tells the user which extra to install.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "extra"],
+      "properties": {
+        "module": {
+          "description": "Python module that must be importable, e.g. \"faster_whisper\".",
+          "type": "string"
+        },
+        "extra": {
+          "description": "Extra that installs it: \"uv sync --extra <extra>\".",
+          "type": "string"
+        }
+      }
+    },
+    "needs_vad": {
+      "description": "The provider only works when a vad node earlier in the pipeline marks where speech starts and stops (e.g. STT that transcribes whole utterances).",
+      "type": "boolean",
+      "default": false
+    },
     "params": {
       "description": "JSON Schema (draft 2020-12) for the node's params. Top-level property defaults are applied before the adapter runs.",
       "type": "object",

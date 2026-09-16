@@ -2,7 +2,7 @@
 
 import pytest
 
-from conftest import write_provider
+from helpers import write_provider
 from vocalis import ProviderError, ProviderRegistry
 
 
