@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/bilalahmed14/Vocalis/main/schema/provider.v1.schema.json",
+  "title": "ProviderManifest",
+  "description": "Manifest for a provider plugin (providers/<type>/<id>/provider.json). The runtime uses it to validate node params and check secrets; the canvas uses it to build the palette and the node inspector form.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "name", "params"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "description": "Provider id used in agent configs. Must match the plugin's folder name.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "type": {
+      "description": "Node type this plugin implements. Must match the parent folder name.",
+      "enum": ["vad", "stt", "llm", "tts"]
+    },
+    "name": {
+      "description": "Display name, e.g. \"Deepgram\".",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "docs_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "env": {
+      "description": "Environment variables the provider needs, usually API keys. The compiler refuses to build a node while any are missing.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      },
+      "default": []
+    },
+    "requires": {
+      "description": "An optional dependency the provider needs. The compiler refuses to build the node while the module is missing, and tells the user which extra to install.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "extra"],
+      "properties": {
+        "module": {
+          "description": "Python module that must be importable, e.g. \"faster_whisper\".",
+          "type": "string"
+        },
+        "extra": {
+          "description": "Extra that installs it: \"uv sync --extra <extra>\".",
+          "type": "string"
+        }
+      }
+    },
+    "needs_vad": {
+      "description": "The provider only works when a vad node earlier in the pipeline marks where speech starts and stops (e.g. STT that transcribes whole utterances).",
+      "type": "boolean",
+      "default": false
+    },
+    "params": {
+      "description": "JSON Schema (draft 2020-12) for the node's params. Top-level property defaults are applied before the adapter runs.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "object" }
+      }
+    }
+  }
+}

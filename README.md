@@ -5,7 +5,8 @@ like cables on an audio patchbay, test calls in the browser, and see live latenc
 per node. Built on [Pipecat](https://github.com/pipecat-ai/pipecat). Self-hostable
 with one command.
 
-> **Status:** early development. Phase 1 (engine and CLI) is done; the canvas is next.
+> **Status:** early development. Phase 1 (engine and CLI) is done, and the canvas can
+> build and export agents. Test calls and live metrics are next.
 
 ## Principles
 
@@ -58,6 +59,17 @@ keys are only ever read from the environment, never from agent configs.
 Other commands: `vocalis validate <agent.json>`, `vocalis providers`,
 `vocalis devices`. See [cli/README.md](cli/README.md).
 
+## The canvas
+
+```bash
+pnpm --dir dashboard install
+pnpm --dir dashboard dev      # http://localhost:3000
+```
+
+Drag providers from the palette, patch them together (only matching ports connect),
+edit each node's settings in the inspector, and export the JSON that `vocalis run`
+takes. See [dashboard/README.md](dashboard/README.md).
+
 ## Providers
 
 | Stage | Providers                                  |
@@ -73,10 +85,14 @@ Adding one takes a folder with a manifest, an adapter and an icon; see
 ## Development
 
 ```bash
-uv sync --all-extras         # install the workspace, including local Whisper
-uv run pytest                # run the tests
-uv run ruff check .          # lint
-uv run schema/validate.py    # check examples against the schema
+uv sync --all-extras              # Python workspace, including local Whisper
+uv run pytest                     # runtime, provider and CLI tests
+uv run ruff check .               # lint
+uv run schema/validate.py         # check examples against the schema
+
+pnpm --dir dashboard install
+pnpm --dir dashboard test         # canvas tests
+pnpm --dir dashboard gen:schema   # regenerate TS types after a schema change
 ```
 
 ## License

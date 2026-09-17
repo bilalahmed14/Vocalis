@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/bilalahmed14/Vocalis/main/schema/agent.v1.schema.json",
+  "title": "AgentConfig",
+  "description": "A Vocalis voice agent: provider nodes patched together by edges. Graph rules that JSON Schema cannot express (unique node ids, edges that reference real nodes, audio/text port compatibility, using each node type's x-ports) are enforced by the runtime compiler.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional path or URL of this schema, so editors can validate hand-written configs."
+    },
+    "schema_version": {
+      "description": "Version of this config format. Bumped only on breaking changes.",
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Edge"
+      }
+    }
+  },
+  "$defs": {
+    "NodeId": {
+      "title": "NodeId",
+      "description": "Unique id of a node within the agent. Edges and error messages refer to nodes by this id.",
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+    },
+    "ProviderId": {
+      "title": "ProviderId",
+      "description": "Id of a provider plugin in /providers, e.g. \"deepgram\". Must support the node's type.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+    },
+    "ProviderParams": {
+      "title": "ProviderParams",
+      "description": "Provider-specific settings, validated against the provider plugin's own schema. Never put API keys here; they are read from the environment.",
+      "type": "object",
+      "default": {}
+    },
+    "Label": {
+      "title": "Label",
+      "description": "Optional display name for the node on the canvas.",
+      "type": "string",
+      "maxLength": 100
+    },
+    "Node": {
+      "title": "Node",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/VadNode"
+        },
+        {
+          "$ref": "#/$defs/SttNode"
+        },
+        {
+          "$ref": "#/$defs/LlmNode"
+        },
+        {
+          "$ref": "#/$defs/TtsNode"
+        }
+      ]
+    },
+    "VadNode": {
+      "title": "VadNode",
+      "description": "Voice activity detection. Audio in, audio out; marks where the user starts and stops speaking.",
+      "x-ports": {
+        "input": "audio",
+        "output": "audio"
+      },
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "provider"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "type": {
+          "const": "vad"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "params": {
+          "$ref": "#/$defs/ProviderParams"
+        }
+      }
+    },
+    "SttNode": {
+      "title": "SttNode",
+      "description": "Speech to text. Audio in, text out.",
+      "x-ports": {
+        "input": "audio",
+        "output": "text"
+      },
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "provider"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "type": {
+          "const": "stt"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "params": {
+          "$ref": "#/$defs/ProviderParams"
+        }
+      }
+    },
+    "LlmNode": {
+      "title": "LlmNode",
+      "description": "Language model. Text in, text out.",
+      "x-ports": {
+        "input": "text",
+        "output": "text"
+      },
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "provider",
+        "system_prompt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "type": {
+          "const": "llm"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "system_prompt": {
+          "description": "Instructions for the agent. Lives on the node, not in provider params, so it survives swapping the LLM provider.",
+          "type": "string",
+          "minLength": 1
+        },
+        "params": {
+          "$ref": "#/$defs/ProviderParams"
+        }
+      }
+    },
+    "TtsNode": {
+      "title": "TtsNode",
+      "description": "Text to speech. Text in, audio out.",
+      "x-ports": {
+        "input": "text",
+        "output": "audio"
+      },
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "provider"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "type": {
+          "const": "tts"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderId"
+        },
+        "label": {
+          "$ref": "#/$defs/Label"
+        },
+        "params": {
+          "$ref": "#/$defs/ProviderParams"
+        }
+      }
+    },
+    "Edge": {
+      "title": "Edge",
+      "description": "A cable from one node's output to another node's input.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "target"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "target": {
+          "$ref": "#/$defs/NodeId"
+        }
+      }
+    }
+  }
+}

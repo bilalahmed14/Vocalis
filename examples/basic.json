@@ -14,25 +14,42 @@
       "id": "stt",
       "type": "stt",
       "provider": "deepgram",
-      "params": { "model": "nova-3", "language": "en" }
+      "params": {
+        "model": "nova-3",
+        "language": "en"
+      }
     },
     {
       "id": "llm",
       "type": "llm",
       "provider": "openai",
       "system_prompt": "You are a friendly voice assistant. Keep replies short and conversational. Everything you say is spoken aloud, so never use markdown, lists or emoji.",
-      "params": { "model": "gpt-4.1-mini", "temperature": 0.7 }
+      "params": {
+        "model": "gpt-4.1-mini",
+        "temperature": 0.7
+      }
     },
     {
       "id": "tts",
       "type": "tts",
       "provider": "cartesia",
-      "params": { "voice_id": "71a7ad14-091c-4e8e-a314-022ece01c121" }
+      "params": {
+        "voice_id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+      }
     }
   ],
   "edges": [
-    { "source": "vad", "target": "stt" },
-    { "source": "stt", "target": "llm" },
-    { "source": "llm", "target": "tts" }
+    {
+      "source": "vad",
+      "target": "stt"
+    },
+    {
+      "source": "stt",
+      "target": "llm"
+    },
+    {
+      "source": "llm",
+      "target": "tts"
+    }
   ]
 }
