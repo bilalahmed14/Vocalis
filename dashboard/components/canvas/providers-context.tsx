@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-import type { Provider } from "@/lib/providers";
+import type { Provider } from "@/lib/api";
 
 const ProvidersContext = createContext<Provider[]>([]);
 

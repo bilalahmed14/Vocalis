@@ -19,7 +19,7 @@ with one command.
 
 | Path         | What lives there                                               |
 | ------------ | -------------------------------------------------------------- |
-| `runtime/`   | Pipecat worker: loads a config, builds the pipeline, streams metrics |
+| `runtime/`   | Pipecat worker and HTTP API: configs, pipelines, saved agents    |
 | `dashboard/` | Next.js canvas and test-call UI                                |
 | `schema/`    | JSON Schema for agent configs (source of truth, shared by both) |
 | `providers/` | Provider plugins (Python adapter + node schema + icon)         |
@@ -59,16 +59,23 @@ keys are only ever read from the environment, never from agent configs.
 Other commands: `vocalis validate <agent.json>`, `vocalis providers`,
 `vocalis devices`. See [cli/README.md](cli/README.md).
 
-## The canvas
+## Run the whole thing
 
 ```bash
-pnpm --dir dashboard install
-pnpm --dir dashboard dev      # http://localhost:3000
+docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
-Drag providers from the palette, patch them together (only matching ports connect),
-edit each node's settings in the inspector, and export the JSON that `vocalis run`
-takes. See [dashboard/README.md](dashboard/README.md).
+One command brings up the canvas, the API and Postgres, migrations included. Open
+[localhost:3000](http://localhost:3000): drag providers from the palette, patch them
+together (only matching ports connect), edit each node in the inspector, and save. You
+need API keys only to place a call. See [deploy/README.md](deploy/README.md).
+
+To work on the canvas itself, run it from source against the same API:
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d postgres api
+pnpm --dir dashboard install && pnpm --dir dashboard dev
+```
 
 ## Providers
 
@@ -89,6 +96,8 @@ uv sync --all-extras              # Python workspace, including local Whisper
 uv run pytest                     # runtime, provider and CLI tests
 uv run ruff check .               # lint
 uv run schema/validate.py         # check examples against the schema
+
+docker compose -f deploy/docker-compose.yml up -d postgres   # database tests need this
 
 pnpm --dir dashboard install
 pnpm --dir dashboard test         # canvas tests

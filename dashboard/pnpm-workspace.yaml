@@ -1,3 +1,5 @@
-allowBuilds:
-  sharp: false
-  unrs-resolver: false
+# pnpm blocks dependency build scripts by default. Allow the one this project needs
+# (eslint's native resolver), and don't fail installs over ones we haven't approved.
+onlyBuiltDependencies:
+  - unrs-resolver
+strictDepBuilds: false

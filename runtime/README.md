@@ -30,11 +30,34 @@ examples/broken.json: invalid agent config (4 problems)
 | `graph.py`     | Port types, single-chain shape, node order                       |
 | `providers.py` | Discovers plugins in `/providers`, validates params, loads adapters |
 | `compiler.py`  | Runs all checks, builds processors, wires the `Pipeline`         |
+| `store/`       | Postgres tables and the agent/version store                      |
+| `api/`         | FastAPI app the dashboard talks to                               |
+
+## The API
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --build   # Postgres + the API
+```
+
+| Method | Path | Does |
+| ------ | ---- | ---- |
+| `GET` | `/providers` | installed provider plugins, with their params schemas |
+| `POST` | `/validate` | check a config; returns node-level issues, saves nothing |
+| `GET`/`POST` | `/agents` | list agents, or save a new one |
+| `GET`/`PUT`/`DELETE` | `/agents/{slug}` | read, save a new version, or delete |
+| `GET` | `/agents/{slug}/versions` | version history |
+| `GET` | `/agents/{slug}/versions/{n}` | one old config |
+| `POST` | `/agents/{slug}/versions/{n}/restore` | copy an old version forward |
+
+Saving runs the same checks as `vocalis run`, so the database only ever holds configs
+that compile; an invalid one comes back as a 422 listing the nodes at fault. Versions
+are immutable, and restoring writes a new version rather than rewinding history.
 
 ## Tests
 
 From the repo root:
 
 ```bash
-uv run pytest
+uv run pytest                                                 # database tests skip
+DATABASE_URL=postgresql://vocalis:vocalis@localhost:5432/vocalis uv run pytest
 ```

@@ -6,8 +6,13 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.14",
+    "asyncpg>=0.30",
+    "fastapi>=0.118",
     "jsonschema>=4.23",
     "pipecat-ai[anthropic,cartesia,deepgram,elevenlabs,groq,openai,silero]>=1.10,<2",
+    "sqlalchemy[asyncio]>=2.0",
+    "uvicorn[standard]>=0.34",
 ]
 
 [project.optional-dependencies]

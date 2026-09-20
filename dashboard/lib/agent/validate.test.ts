@@ -1,21 +1,35 @@
 /**
  * Canvas validation, checked against the real provider manifests in /providers.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { validateAgent } from "@/lib/agent/validate";
-import { loadProviders, type Provider } from "@/lib/providers";
 import type { AgentConfig } from "@/lib/schema/agent.gen";
+import type { ProviderManifest } from "@/lib/schema/provider.gen";
 
-const EXAMPLE = path.join(__dirname, "..", "..", "..", "examples", "basic.json");
+const REPO = path.join(__dirname, "..", "..", "..");
+const EXAMPLE = path.join(REPO, "examples", "basic.json");
 
-let providers: Provider[];
-
-beforeAll(async () => {
-  providers = await loadProviders();
-});
+/** The real plugin manifests, read straight from /providers. */
+const providers: ProviderManifest[] = readdirSync(path.join(REPO, "providers"), {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isDirectory())
+  .flatMap((type) =>
+    readdirSync(path.join(REPO, "providers", type.name), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map(
+        (plugin) =>
+          JSON.parse(
+            readFileSync(
+              path.join(REPO, "providers", type.name, plugin.name, "provider.json"),
+              "utf8",
+            ),
+          ) as ProviderManifest,
+      ),
+  );
 
 function example(): AgentConfig {
   return JSON.parse(readFileSync(EXAMPLE, "utf8")) as AgentConfig;

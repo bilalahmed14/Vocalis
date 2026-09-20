@@ -3,12 +3,15 @@ members = ["runtime", "cli"]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28",
     "pytest>=8.3",
+    "pytest-asyncio>=0.25",
     "ruff>=0.8",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["runtime/tests", "providers", "cli/tests"]
+asyncio_mode = "auto"
 pythonpath = ["runtime/tests", "providers"]
 addopts = "-ra"
 
@@ -19,5 +22,9 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency injection is written this way on purpose.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
 [tool.ruff.lint.isort]
-known-first-party = ["vocalis", "vocalis_cli", "helpers", "provider_testing"]
+known-first-party = ["vocalis", "vocalis_cli", "db", "helpers", "provider_testing"]

@@ -12,34 +12,42 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { AgentNode } from "@/components/canvas/agent-node";
 import { Inspector } from "@/components/canvas/inspector";
 import { Palette } from "@/components/canvas/palette";
 import { ProvidersProvider, useProviders } from "@/components/canvas/providers-context";
+import { type SaveState, Toolbar } from "@/components/canvas/toolbar";
 import { SCHEMA_REF, nextNodeId, serializeConfig } from "@/lib/agent/config";
 import { type AgentNode as AgentNodeType, type NodeData, configToFlow, edgeId, flowToConfig } from "@/lib/agent/flow";
 import { validateAgent } from "@/lib/agent/validate";
-import type { Provider } from "@/lib/providers";
+import { type AgentSummary, type AgentVersion, type Provider, api } from "@/lib/api";
 import type { AgentConfig } from "@/lib/schema/agent.gen";
 import { canConnect } from "@/lib/schema/ports";
 
 const nodeTypes = { agentNode: AgentNode };
 
-export function AgentEditor({ providers, config }: { providers: Provider[]; config: AgentConfig }) {
+type EditorProps = {
+  providers: Provider[];
+  config: AgentConfig;
+  agents?: AgentSummary[];
+  saved?: { slug: string; version: number } | null;
+  versions?: AgentVersion[];
+};
+
+export function AgentEditor({ providers, ...props }: EditorProps) {
   return (
     <ProvidersProvider value={providers}>
       <ReactFlowProvider>
-        <Editor config={config} />
+        <Editor {...props} />
       </ReactFlowProvider>
     </ProvidersProvider>
   );
 }
 
-function Editor({ config }: { config: AgentConfig }) {
+function Editor({ config, agents = [], saved: initialSaved = null, versions: initialVersions = [] }: Omit<EditorProps, "providers">) {
   const providers = useProviders();
   const initial = useMemo(() => configToFlow(config), [config]);
 
@@ -47,8 +55,11 @@ function Editor({ config }: { config: AgentConfig }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initial.edges);
   const [meta, setMeta] = useState({ name: config.name, description: config.description });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(initialSaved);
+  const [versions, setVersions] = useState(initialVersions);
+  const [state, setState] = useState<SaveState>({ kind: "idle" });
   const { screenToFlowPosition } = useReactFlow();
-  const fileInput = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const agent = useMemo(
     () => flowToConfig({ $schema: SCHEMA_REF, ...meta }, nodes, edges),
@@ -148,6 +159,57 @@ function Editor({ config }: { config: AgentConfig }) {
     [setEdges, setNodes],
   );
 
+  const load = useCallback(
+    (next: AgentConfig) => {
+      const flow = configToFlow(next);
+      setMeta({ name: next.name, description: next.description });
+      setNodes(flow.nodes);
+      setEdges(flow.edges);
+      setSelectedId(null);
+    },
+    [setEdges, setNodes],
+  );
+
+  const save = useCallback(async () => {
+    setState({ kind: "saving" });
+    try {
+      const result = saved ? await api.save(saved.slug, agent) : await api.create(agent);
+      setSaved({ slug: result.slug, version: result.version });
+      setVersions(await api.versions(result.slug));
+      setState({ kind: "saved", message: `saved v${result.version}` });
+      if (!saved) router.replace(`/agents/${result.slug}`);
+    } catch (error) {
+      setState({ kind: "error", message: error instanceof Error ? error.message : "save failed" });
+    }
+  }, [agent, saved, router]);
+
+  const openVersion = useCallback(
+    async (version: number) => {
+      if (!saved) return;
+      const old = await api.versionConfig(saved.slug, version);
+      load(old.config);
+      setSaved({ slug: old.slug, version });
+      setState(
+        version === versions[0]?.version
+          ? { kind: "idle" }
+          : { kind: "idle", message: `viewing v${version}` },
+      );
+    },
+    [load, saved, versions],
+  );
+
+  const restore = useCallback(
+    async (version: number) => {
+      if (!saved) return;
+      const restored = await api.restore(saved.slug, version);
+      load(restored.config);
+      setSaved({ slug: restored.slug, version: restored.version });
+      setVersions(await api.versions(restored.slug));
+      setState({ kind: "saved", message: `restored v${version} as v${restored.version}` });
+    },
+    [load, saved],
+  );
+
   const exportJson = useCallback(() => {
     const blob = new Blob([serializeConfig(agent)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -160,14 +222,10 @@ function Editor({ config }: { config: AgentConfig }) {
 
   const importJson = useCallback(
     async (file: File) => {
-      const imported = JSON.parse(await file.text()) as AgentConfig;
-      const flow = configToFlow(imported);
-      setMeta({ name: imported.name, description: imported.description });
-      setNodes(flow.nodes);
-      setEdges(flow.edges);
-      setSelectedId(null);
+      load(JSON.parse(await file.text()) as AgentConfig);
+      setState({ kind: "idle", message: `imported ${file.name}` });
     },
-    [setEdges, setNodes],
+    [load],
   );
 
   const selected = nodes.find((node) => node.id === selectedId) ?? null;
@@ -176,43 +234,20 @@ function Editor({ config }: { config: AgentConfig }) {
 
   return (
     <div className="flex h-dvh flex-col">
-      <header className="flex items-center gap-3 border-b px-4 py-2">
-        <span className="font-semibold">Vocalis</span>
-        <Input
-          aria-label="Agent name"
-          className="h-8 w-64"
-          value={meta.name}
-          onChange={(event) => setMeta((current) => ({ ...current, name: event.target.value }))}
-        />
-        <span
-          className={
-            issues.length
-              ? "rounded bg-destructive/10 px-2 py-1 text-xs text-destructive"
-              : "rounded bg-emerald-500/10 px-2 py-1 text-xs text-emerald-600"
-          }
-        >
-          {issues.length ? `${issues.length} problem${issues.length > 1 ? "s" : ""}` : "valid"}
-        </span>
-        <div className="ml-auto flex gap-2">
-          <input
-            ref={fileInput}
-            type="file"
-            accept="application/json"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void importJson(file);
-              event.target.value = "";
-            }}
-          />
-          <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()}>
-            Import
-          </Button>
-          <Button size="sm" onClick={exportJson}>
-            Export JSON
-          </Button>
-        </div>
-      </header>
+      <Toolbar
+        name={meta.name}
+        onNameChange={(name) => setMeta((current) => ({ ...current, name }))}
+        issueCount={issues.length}
+        agents={agents}
+        saved={saved}
+        versions={versions}
+        state={state}
+        onSave={save}
+        onImport={(file) => void importJson(file)}
+        onExport={exportJson}
+        onOpenVersion={(version) => void openVersion(version)}
+        onRestore={(version) => void restore(version)}
+      />
 
       <div className="flex min-h-0 flex-1">
         <Palette onAdd={(type, providerId) => addNode(type, providerId)} />
