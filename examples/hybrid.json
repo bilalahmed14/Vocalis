@@ -1,0 +1,57 @@
+{
+  "$schema": "../schema/agent.v1.schema.json",
+  "schema_version": 1,
+  "name": "Hybrid assistant",
+  "description": "Local speech to text and model, Deepgram voices. Only the TTS needs a key, and local CPU never becomes the bottleneck.",
+  "nodes": [
+    {
+      "id": "vad",
+      "type": "vad",
+      "provider": "silero",
+      "params": {
+        "stop_secs": 0.2
+      }
+    },
+    {
+      "id": "stt",
+      "type": "stt",
+      "provider": "moonshine",
+      "params": {
+        "model": "base",
+        "ttfs_p99_latency": 0.3
+      }
+    },
+    {
+      "id": "llm",
+      "type": "llm",
+      "provider": "ollama",
+      "system_prompt": "You are a voice assistant. Answer in one short sentence, under 15 words. Everything you say is spoken aloud, so never use markdown, lists or emoji.",
+      "params": {
+        "model": "llama3.2:1b",
+        "max_tokens": 60
+      }
+    },
+    {
+      "id": "tts",
+      "type": "tts",
+      "provider": "deepgram",
+      "params": {
+        "voice": "aura-2-helena-en"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "vad",
+      "target": "stt"
+    },
+    {
+      "source": "stt",
+      "target": "llm"
+    },
+    {
+      "source": "llm",
+      "target": "tts"
+    }
+  ]
+}

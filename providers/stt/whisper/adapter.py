@@ -8,6 +8,7 @@ def create(params, ctx):
         raise RuntimeError("local Whisper isn't installed; run: uv sync --extra whisper") from e
 
     return WhisperSTTService(
+        ttfs_p99_latency=params["ttfs_p99_latency"],
         device=params["device"],
         compute_type=params["compute_type"],
         settings=WhisperSTTService.Settings(

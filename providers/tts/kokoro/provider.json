@@ -1,0 +1,35 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "kokoro",
+  "type": "tts",
+  "name": "Kokoro (local)",
+  "description": "On-device text to speech. No API key; the voice model downloads on first use. Install with: uv sync --extra local",
+  "docs_url": "https://github.com/thewh1teagle/kokoro-onnx",
+  "env": [],
+  "requires": { "module": "kokoro_onnx", "extra": "local" },
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "voice_id": {
+        "title": "Voice",
+        "description": "Kokoro voice name. The first letter is the accent (a = American, b = British), the second the speaker's gender.",
+        "type": "string",
+        "default": "af_heart",
+        "examples": ["af_heart", "af_bella", "am_michael", "bf_emma", "bm_george"]
+      },
+      "speed": {
+        "title": "Speed",
+        "type": "number",
+        "minimum": 0.5,
+        "maximum": 2,
+        "default": 1
+      },
+      "language": {
+        "title": "Language",
+        "type": "string",
+        "default": "en"
+      }
+    }
+  }
+}

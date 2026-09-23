@@ -1,0 +1,57 @@
+{
+  "$schema": "../schema/agent.v1.schema.json",
+  "schema_version": 1,
+  "name": "Local assistant",
+  "description": "Runs entirely on your machine: Silero VAD, Moonshine STT, Ollama and Kokoro TTS. No API keys.",
+  "nodes": [
+    {
+      "id": "vad",
+      "type": "vad",
+      "provider": "silero",
+      "params": {
+        "stop_secs": 0.2
+      }
+    },
+    {
+      "id": "stt",
+      "type": "stt",
+      "provider": "moonshine",
+      "params": {
+        "model": "base",
+        "ttfs_p99_latency": 0.3
+      }
+    },
+    {
+      "id": "llm",
+      "type": "llm",
+      "provider": "ollama",
+      "system_prompt": "You are a voice assistant. Answer in one short sentence. Everything you say is spoken aloud, so never use markdown, lists or emoji.",
+      "params": {
+        "model": "llama3.2:1b",
+        "max_tokens": 80
+      }
+    },
+    {
+      "id": "tts",
+      "type": "tts",
+      "provider": "kokoro",
+      "params": {
+        "voice_id": "af_heart"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "vad",
+      "target": "stt"
+    },
+    {
+      "source": "stt",
+      "target": "llm"
+    },
+    {
+      "source": "llm",
+      "target": "tts"
+    }
+  ]
+}

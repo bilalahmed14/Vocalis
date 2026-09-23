@@ -1,11 +1,20 @@
 "use client";
 
+import {
+  CircleCheck,
+  Download,
+  History,
+  Phone,
+  Save,
+  TriangleAlert,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import type { AgentSummary, AgentVersion } from "@/lib/api";
+import type { AgentVersion } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export type SaveState = { kind: "idle" | "saving" | "saved" | "error"; message?: string };
 
@@ -13,7 +22,6 @@ export function Toolbar({
   name,
   onNameChange,
   issueCount,
-  agents,
   saved,
   versions,
   state,
@@ -26,7 +34,6 @@ export function Toolbar({
   name: string;
   onNameChange: (name: string) => void;
   issueCount: number;
-  agents: AgentSummary[];
   saved: { slug: string; version: number } | null;
   versions: AgentVersion[];
   state: SaveState;
@@ -37,75 +44,73 @@ export function Toolbar({
   onRestore: (version: number) => void;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const latest = versions[0]?.version;
+  const viewingOld = saved != null && latest != null && saved.version !== latest;
 
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b px-4 py-2">
-      <Link href="/" className="font-semibold">
-        Vocalis
-      </Link>
-
-      <select
-        aria-label="Open an agent"
-        className="h-8 max-w-40 rounded-md border bg-transparent px-2 text-sm"
-        value={saved?.slug ?? ""}
-        onChange={(event) => {
-          window.location.href = event.target.value ? `/agents/${event.target.value}` : "/new";
-        }}
-      >
-        <option value="">New agent</option>
-        {agents.map((agent) => (
-          <option key={agent.slug} value={agent.slug}>
-            {agent.name}
-          </option>
-        ))}
-      </select>
-
-      <Input
-        aria-label="Agent name"
-        className="h-8 w-56"
-        value={name}
-        onChange={(event) => onNameChange(event.target.value)}
-      />
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
+      <div className="flex min-w-0 items-center gap-2 text-sm">
+        <Link href="/" className="shrink-0 text-muted-foreground hover:text-foreground">
+          Agents
+        </Link>
+        <span className="text-muted-foreground/50">/</span>
+        <input
+          aria-label="Agent name"
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          className="w-52 rounded-md border border-transparent bg-transparent px-1.5 py-1 font-medium outline-none hover:border-border focus:border-ring"
+        />
+      </div>
 
       <span
-        className={
+        className={cn(
+          "flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
           issueCount
-            ? "rounded bg-destructive/10 px-2 py-1 text-xs text-destructive"
-            : "rounded bg-emerald-500/10 px-2 py-1 text-xs text-emerald-600"
-        }
+            ? "bg-destructive/10 text-destructive"
+            : "bg-success/10 text-success",
+        )}
       >
-        {issueCount ? `${issueCount} problem${issueCount > 1 ? "s" : ""}` : "valid"}
+        {issueCount ? <TriangleAlert className="size-3" /> : <CircleCheck className="size-3" />}
+        {issueCount ? `${issueCount} problem${issueCount > 1 ? "s" : ""}` : "Ready"}
       </span>
 
       {saved && versions.length > 0 ? (
-        <select
-          aria-label="Version history"
-          className="h-8 rounded-md border bg-transparent px-2 text-sm"
-          value={saved.version}
-          onChange={(event) => onOpenVersion(Number(event.target.value))}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <History className="size-3.5 text-muted-foreground" />
+          <select
+            aria-label="Version history"
+            value={saved.version}
+            onChange={(event) => onOpenVersion(Number(event.target.value))}
+            className="h-7 max-w-44 rounded-md border border-input bg-background px-1.5 text-xs outline-none focus:border-ring"
+          >
+            {versions.map((version) => (
+              <option key={version.version} value={version.version}>
+                v{version.version}
+                {version.note ? ` — ${version.note}` : ""}
+              </option>
+            ))}
+          </select>
+          {viewingOld ? (
+            <Button size="sm" variant="outline" className="h-7" onClick={() => onRestore(saved.version)}>
+              Restore
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {state.message ? (
+        <span
+          className={cn(
+            "min-w-0 truncate text-xs",
+            state.kind === "error" ? "text-destructive" : "text-muted-foreground",
+          )}
+          title={state.message}
         >
-          {versions.map((version) => (
-            <option key={version.version} value={version.version}>
-              v{version.version}
-              {version.note ? ` — ${version.note}` : ""}
-            </option>
-          ))}
-        </select>
+          {state.message}
+        </span>
       ) : null}
 
-      {saved && saved.version !== versions[0]?.version ? (
-        <Button variant="outline" size="sm" onClick={() => onRestore(saved.version)}>
-          Restore v{saved.version}
-        </Button>
-      ) : null}
-
-      <span
-        className={`text-xs ${state.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}
-      >
-        {state.message}
-      </span>
-
-      <div className="ml-auto flex gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <input
           ref={fileInput}
           type="file"
@@ -117,14 +122,24 @@ export function Toolbar({
             event.target.value = "";
           }}
         />
-        <Button variant="ghost" size="sm" onClick={() => fileInput.current?.click()}>
-          Import
+        <Button variant="ghost" size="sm" onClick={() => fileInput.current?.click()} title="Import JSON">
+          <Upload className="size-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={onExport}>
-          Export JSON
+        <Button variant="ghost" size="sm" onClick={onExport} title="Export JSON">
+          <Download className="size-4" />
         </Button>
-        <Button size="sm" onClick={onSave} disabled={state.kind === "saving"}>
+        <Button variant="outline" size="sm" onClick={onSave} disabled={state.kind === "saving"}>
+          <Save className="size-4" />
           {state.kind === "saving" ? "Saving…" : saved ? "Save version" : "Save"}
+        </Button>
+        <Button
+          size="sm"
+          disabled
+          title="Browser test calls arrive in the next phase"
+          className="gap-1.5"
+        >
+          <Phone className="size-4" />
+          Test call
         </Button>
       </div>
     </header>

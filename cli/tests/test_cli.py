@@ -54,7 +54,8 @@ def test_validate_reports_bad_nodes(tmp_path, no_real_secrets, capsys):
     assert main(["validate", str(path), "--env-file", no_real_secrets]) == 1
 
     err = capsys.readouterr().err
-    assert 'node "tts": unknown tts provider "elevenlab" (available: cartesia, elevenlabs)' in err
+    assert 'node "tts": unknown tts provider "elevenlab"' in err
+    assert "available: cartesia, deepgram, elevenlabs, kokoro" in err
 
 
 def test_run_refuses_without_secrets(no_real_secrets, capsys):
@@ -82,12 +83,16 @@ def test_providers_lists_everything_installed(no_real_secrets, capsys):
     assert [line.split()[:2] for line in lines] == [
         ["vad", "silero"],
         ["stt", "deepgram"],
+        ["stt", "moonshine"],
         ["stt", "whisper"],
         ["llm", "anthropic"],
         ["llm", "groq"],
+        ["llm", "ollama"],
         ["llm", "openai"],
         ["tts", "cartesia"],
+        ["tts", "deepgram"],
         ["tts", "elevenlabs"],
+        ["tts", "kokoro"],
     ]
     assert lines[0].endswith("ready")
     assert lines[1].endswith("needs DEEPGRAM_API_KEY")

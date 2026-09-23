@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   if (!(await apiReachable())) return <RuntimeDown />;
 
-  const [providers, agents] = await Promise.all([api.providers(), api.agents()]);
-  return <AgentEditor providers={providers} config={emptyConfig()} agents={agents} />;
+  const providers = await api.providers();
+  return <AgentEditor providers={providers} config={emptyConfig()} />;
 }

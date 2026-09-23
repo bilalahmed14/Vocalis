@@ -16,6 +16,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Everything needed to run an agent with no API keys: on-device STT and TTS.
+# The LLM side is Ollama, which runs as its own service.
+local = [
+    "pipecat-ai[kokoro,moonshine]>=1.10,<2",
+]
 # Local Whisper pulls in CTranslate2 and downloads model weights, so it's opt-in.
 # On Apple Silicon, Pipecat's Whisper module also imports mlx-whisper.
 whisper = [

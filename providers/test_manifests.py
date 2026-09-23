@@ -19,11 +19,15 @@ def test_expected_providers_are_installed():
         ("vad", "silero"),
         ("stt", "deepgram"),
         ("stt", "whisper"),
+        ("stt", "moonshine"),
         ("llm", "openai"),
         ("llm", "anthropic"),
         ("llm", "groq"),
+        ("llm", "ollama"),
         ("tts", "elevenlabs"),
         ("tts", "cartesia"),
+        ("tts", "deepgram"),
+        ("tts", "kokoro"),
     }
 
 

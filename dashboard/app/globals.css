@@ -39,6 +39,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-stage-vad: var(--stage-vad);
+  --color-stage-stt: var(--stage-stt);
+  --color-stage-llm: var(--stage-llm);
+  --color-stage-tts: var(--stage-tts);
+  --color-port-audio: var(--port-audio);
+  --color-port-text: var(--port-text);
+  --color-success: var(--success);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,72 +57,90 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Light theme. The app ships dark by default; this keeps light usable. */
+  --background: oklch(0.99 0.002 265);
+  --foreground: oklch(0.21 0.015 265);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.21 0.015 265);
+  --surface: oklch(0.97 0.004 265);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --popover-foreground: oklch(0.21 0.015 265);
+  --primary: oklch(0.55 0.21 275);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.005 265);
+  --secondary-foreground: oklch(0.28 0.015 265);
+  --muted: oklch(0.96 0.005 265);
+  --muted-foreground: oklch(0.52 0.015 265);
+  --accent: oklch(0.95 0.012 275);
+  --accent-foreground: oklch(0.28 0.02 275);
+  --destructive: oklch(0.58 0.22 25);
+  --success: oklch(0.62 0.16 155);
+  --border: oklch(0.9 0.006 265);
+  --input: oklch(0.92 0.006 265);
+  --ring: oklch(0.55 0.21 275);
+  --chart-1: oklch(0.55 0.21 275);
+  --chart-2: oklch(0.65 0.15 215);
+  --chart-3: oklch(0.68 0.16 300);
+  --chart-4: oklch(0.7 0.15 155);
+  --chart-5: oklch(0.72 0.15 70);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --stage-vad: oklch(0.72 0.15 70);
+  --stage-stt: oklch(0.65 0.14 215);
+  --stage-llm: oklch(0.62 0.19 285);
+  --stage-tts: oklch(0.66 0.15 160);
+  --port-audio: oklch(0.68 0.14 215);
+  --port-text: oklch(0.65 0.18 295);
+  --sidebar: oklch(0.97 0.004 265);
+  --sidebar-foreground: oklch(0.21 0.015 265);
+  --sidebar-primary: oklch(0.55 0.21 275);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.012 275);
+  --sidebar-accent-foreground: oklch(0.28 0.02 275);
+  --sidebar-border: oklch(0.9 0.006 265);
+  --sidebar-ring: oklch(0.55 0.21 275);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Near-black with a cool cast, the way control-room tools tend to look. */
+  --background: oklch(0.17 0.008 275);
+  --foreground: oklch(0.96 0.004 275);
+  --card: oklch(0.21 0.01 275);
+  --card-foreground: oklch(0.96 0.004 275);
+  --surface: oklch(0.2 0.01 275);
+  --popover: oklch(0.23 0.012 275);
+  --popover-foreground: oklch(0.96 0.004 275);
+  --primary: oklch(0.65 0.2 280);
+  --primary-foreground: oklch(0.15 0.01 275);
+  --secondary: oklch(0.26 0.012 275);
+  --secondary-foreground: oklch(0.95 0.004 275);
+  --muted: oklch(0.25 0.012 275);
+  --muted-foreground: oklch(0.7 0.015 275);
+  --accent: oklch(0.29 0.03 280);
+  --accent-foreground: oklch(0.96 0.004 275);
+  --destructive: oklch(0.68 0.19 22);
+  --success: oklch(0.72 0.16 160);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.65 0.2 280);
+  --chart-1: oklch(0.65 0.2 280);
+  --chart-2: oklch(0.72 0.14 215);
+  --chart-3: oklch(0.7 0.17 300);
+  --chart-4: oklch(0.74 0.15 160);
+  --chart-5: oklch(0.78 0.14 70);
+  --stage-vad: oklch(0.78 0.14 70);
+  --stage-stt: oklch(0.74 0.13 215);
+  --stage-llm: oklch(0.7 0.18 285);
+  --stage-tts: oklch(0.74 0.15 160);
+  --port-audio: oklch(0.74 0.13 215);
+  --port-text: oklch(0.7 0.18 295);
+  --sidebar: oklch(0.19 0.009 275);
+  --sidebar-foreground: oklch(0.96 0.004 275);
+  --sidebar-primary: oklch(0.65 0.2 280);
+  --sidebar-primary-foreground: oklch(0.15 0.01 275);
+  --sidebar-accent: oklch(0.27 0.02 280);
+  --sidebar-accent-foreground: oklch(0.96 0.004 275);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.65 0.2 280);
 }
 
 @layer base {
@@ -127,4 +153,60 @@
   html {
     @apply font-sans;
   }
+}
+/* React Flow, themed to match the app. The extra `.react-flow` prefix keeps these
+   ahead of the library's own stylesheet, whichever order they load in. */
+.react-flow__edge-path {
+  stroke: color-mix(in oklch, var(--port-text) 55%, transparent);
+  stroke-width: 2;
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--primary);
+}
+.react-flow__connectionline .react-flow__connection-path {
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+.react-flow .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.5);
+}
+.react-flow .react-flow__controls-button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+.react-flow .react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+.react-flow .react-flow__controls-button:hover {
+  background: var(--accent);
+}
+.react-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+.react-flow .react-flow__attribution {
+  background: transparent;
+  padding: 0 4px;
+}
+.react-flow .react-flow__attribution a {
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.react-flow .react-flow__handle {
+  transition: transform 0.12s ease;
+}
+.react-flow .react-flow__handle:hover {
+  transform: scale(1.35);
+}
+.react-flow .react-flow__node.selectable:focus,
+.react-flow .react-flow__node.selectable:focus-visible {
+  outline: none;
 }

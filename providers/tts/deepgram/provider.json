@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "deepgram",
+  "type": "tts",
+  "name": "Deepgram",
+  "description": "Aura voices over a websocket, streamed as they're generated. The same API key also works for Deepgram speech to text.",
+  "docs_url": "https://developers.deepgram.com/docs/tts-models",
+  "env": ["DEEPGRAM_API_KEY"],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "voice": {
+        "title": "Voice",
+        "description": "An Aura voice name; the suffix is its language.",
+        "type": "string",
+        "default": "aura-2-helena-en",
+        "examples": ["aura-2-helena-en", "aura-2-thalia-en", "aura-2-apollo-en", "aura-asteria-en"]
+      },
+      "speed": {
+        "title": "Speed",
+        "type": "number",
+        "minimum": 0.5,
+        "maximum": 2
+      }
+    }
+  }
+}

@@ -6,7 +6,10 @@
   "description": "Runs Whisper on your machine with faster-whisper. No API key; the model downloads on first use. Transcribes each utterance once the VAD marks it finished. Install with: uv sync --extra whisper",
   "docs_url": "https://github.com/SYSTRAN/faster-whisper",
   "env": [],
-  "requires": { "module": "faster_whisper", "extra": "whisper" },
+  "requires": {
+    "module": "faster_whisper",
+    "extra": "whisper"
+  },
   "needs_vad": true,
   "params": {
     "type": "object",
@@ -17,7 +20,14 @@
         "description": "A Whisper size or a Hugging Face CTranslate2 model id. Bigger is more accurate and slower.",
         "type": "string",
         "default": "Systran/faster-distil-whisper-medium.en",
-        "examples": ["tiny", "base", "small", "medium", "large-v3", "Systran/faster-distil-whisper-medium.en"]
+        "examples": [
+          "tiny",
+          "base",
+          "small",
+          "medium",
+          "large-v3",
+          "Systran/faster-distil-whisper-medium.en"
+        ]
       },
       "language": {
         "title": "Language",
@@ -26,13 +36,23 @@
       },
       "device": {
         "title": "Device",
-        "enum": ["auto", "cpu", "cuda"],
+        "enum": [
+          "auto",
+          "cpu",
+          "cuda"
+        ],
         "default": "auto"
       },
       "compute_type": {
         "title": "Compute type",
         "description": "Weight precision. int8 is fastest on CPU.",
-        "enum": ["default", "int8", "int8_float16", "float16", "float32"],
+        "enum": [
+          "default",
+          "int8",
+          "int8_float16",
+          "float16",
+          "float32"
+        ],
         "default": "default"
       },
       "no_speech_prob": {
@@ -42,6 +62,14 @@
         "minimum": 0,
         "maximum": 1,
         "default": 0.4
+      },
+      "ttfs_p99_latency": {
+        "title": "Final transcript p99 (s)",
+        "description": "How long the pipeline waits after you stop speaking for a late transcript before sending the turn to the model. Too low cuts words off; too high adds dead air to every turn.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 0.5
       }
     }
   }

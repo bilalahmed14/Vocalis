@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "moonshine",
+  "type": "stt",
+  "name": "Moonshine (local)",
+  "description": "On-device speech to text built for low latency. Runs on the CPU with no API key; the model downloads on first use. Transcribes each utterance once the VAD marks it finished. Install with: uv sync --extra local",
+  "docs_url": "https://github.com/moonshine-ai/moonshine",
+  "env": [],
+  "requires": {
+    "module": "moonshine_voice",
+    "extra": "local"
+  },
+  "needs_vad": true,
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "description": "Bigger is more accurate and slower. The streaming variants keep decoding as audio arrives.",
+        "enum": [
+          "tiny",
+          "base",
+          "tiny-streaming",
+          "base-streaming",
+          "small-streaming",
+          "medium-streaming"
+        ],
+        "default": "base"
+      },
+      "language": {
+        "title": "Language",
+        "description": "Moonshine ships one model per language; changing this reloads it.",
+        "type": "string",
+        "default": "en"
+      },
+      "ttfs_p99_latency": {
+        "title": "Final transcript p99 (s)",
+        "description": "How long the pipeline waits after you stop speaking for a late transcript before sending the turn to the model. Too low cuts words off; too high adds dead air to every turn.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 0.3
+      }
+    }
+  }
+}

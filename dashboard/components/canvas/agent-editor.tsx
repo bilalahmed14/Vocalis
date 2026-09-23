@@ -2,6 +2,7 @@
 
 import {
   Background,
+  BackgroundVariant,
   Controls,
   type Edge,
   ReactFlow,
@@ -23,7 +24,7 @@ import { type SaveState, Toolbar } from "@/components/canvas/toolbar";
 import { SCHEMA_REF, nextNodeId, serializeConfig } from "@/lib/agent/config";
 import { type AgentNode as AgentNodeType, type NodeData, configToFlow, edgeId, flowToConfig } from "@/lib/agent/flow";
 import { validateAgent } from "@/lib/agent/validate";
-import { type AgentSummary, type AgentVersion, type Provider, api } from "@/lib/api";
+import { type AgentVersion, type Provider, api } from "@/lib/api";
 import type { AgentConfig } from "@/lib/schema/agent.gen";
 import { canConnect } from "@/lib/schema/ports";
 
@@ -32,7 +33,6 @@ const nodeTypes = { agentNode: AgentNode };
 type EditorProps = {
   providers: Provider[];
   config: AgentConfig;
-  agents?: AgentSummary[];
   saved?: { slug: string; version: number } | null;
   versions?: AgentVersion[];
 };
@@ -47,7 +47,11 @@ export function AgentEditor({ providers, ...props }: EditorProps) {
   );
 }
 
-function Editor({ config, agents = [], saved: initialSaved = null, versions: initialVersions = [] }: Omit<EditorProps, "providers">) {
+function Editor({
+  config,
+  saved: initialSaved = null,
+  versions: initialVersions = [],
+}: Omit<EditorProps, "providers">) {
   const providers = useProviders();
   const initial = useMemo(() => configToFlow(config), [config]);
 
@@ -233,12 +237,11 @@ function Editor({ config, agents = [], saved: initialSaved = null, versions: ini
     issues.filter((issue) => issue.nodeId === id).map((issue) => issue.message);
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <Toolbar
         name={meta.name}
         onNameChange={(name) => setMeta((current) => ({ ...current, name }))}
         issueCount={issues.length}
-        agents={agents}
         saved={saved}
         versions={versions}
         state={state}
@@ -253,7 +256,7 @@ function Editor({ config, agents = [], saved: initialSaved = null, versions: ini
         <Palette onAdd={(type, providerId) => addNode(type, providerId)} />
 
         <div
-          className="min-w-0 flex-1"
+          className="relative min-w-0 flex-1"
           onDragOver={(event) => {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
@@ -277,12 +280,26 @@ function Editor({ config, agents = [], saved: initialSaved = null, versions: ini
             onNodeClick={(_, node) => setSelectedId(node.id)}
             onPaneClick={() => setSelectedId(null)}
             fitView
-            fitViewOptions={{ padding: 0.25 }}
+            fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
+            defaultEdgeOptions={{ animated: true }}
             proOptions={{ hideAttribution: false }}
+            className="bg-background"
           >
-            <Background />
-            <Controls />
+            <Background variant={BackgroundVariant.Dots} gap={18} size={1} className="opacity-60" />
+            <Controls showInteractive={false} className="!shadow-lg" />
           </ReactFlow>
+
+          {nodes.length === 0 ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="rounded-xl border border-dashed border-border bg-card/80 px-6 py-5 text-center backdrop-blur">
+                <p className="text-sm font-medium">Start with a microphone stage</p>
+                <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                  Add voice activity, speech to text, a language model and a voice, then patch
+                  them left to right.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <Inspector
@@ -295,12 +312,17 @@ function Editor({ config, agents = [], saved: initialSaved = null, versions: ini
       </div>
 
       {issues.length > 0 ? (
-        <footer className="max-h-28 overflow-y-auto border-t bg-muted/30 px-4 py-2 text-xs">
-          <ul className="space-y-0.5">
+        <footer className="max-h-32 shrink-0 overflow-y-auto border-t border-border bg-surface/80 px-4 py-2.5">
+          <ul className="space-y-1">
             {issues.map((issue, index) => (
-              <li key={`${issue.nodeId ?? "config"}-${index}`}>
-                <span className="font-medium">{issue.nodeId ? `node "${issue.nodeId}"` : "config"}:</span>{" "}
-                {issue.message}
+              <li
+                key={`${issue.nodeId ?? "config"}-${index}`}
+                className="flex items-baseline gap-2 text-xs"
+              >
+                <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 font-mono text-[10px] text-destructive">
+                  {issue.nodeId ?? "config"}
+                </span>
+                <span className="text-muted-foreground">{issue.message}</span>
               </li>
             ))}
           </ul>

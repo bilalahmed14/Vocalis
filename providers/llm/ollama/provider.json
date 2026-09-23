@@ -1,0 +1,41 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "ollama",
+  "type": "llm",
+  "name": "Ollama (local)",
+  "description": "Open-weight models running on your own machine through Ollama. No API key; start Ollama and pull a model first, e.g. ollama pull llama3.2:3b",
+  "docs_url": "https://ollama.com/library",
+  "env": [],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "model": {
+        "title": "Model",
+        "description": "Any model you've pulled. Small models answer fastest, which is what a voice call needs.",
+        "type": "string",
+        "default": "llama3.2:3b",
+        "examples": ["llama3.2:3b", "llama3.2:1b", "qwen3:4b", "gemma3:4b"]
+      },
+      "base_url": {
+        "title": "Base URL",
+        "description": "Where Ollama is listening. Use http://host.docker.internal:11434/v1 from inside Docker.",
+        "type": "string",
+        "format": "uri",
+        "default": "http://localhost:11434/v1"
+      },
+      "temperature": {
+        "title": "Temperature",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "max_tokens": {
+        "title": "Max tokens",
+        "description": "Upper bound on the length of each reply.",
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  }
+}
