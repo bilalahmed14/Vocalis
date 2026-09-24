@@ -49,7 +49,7 @@ def _run(args: argparse.Namespace) -> int:
     chain = " -> ".join(f"{c.node.type}:{c.node.provider}" for c in agent.nodes)
     print(f"{config.name}  ({chain})")
     print("Listening. Speak into your mic; press Ctrl+C to hang up. Headphones stop echo.\n")
-    asyncio.run(run_session(agent, transport))
+    asyncio.run(run_session(agent, transport, metrics=args.metrics))
     return 0
 
 
@@ -107,6 +107,11 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("agent", help="path to an agent config JSON")
     run.add_argument("--input-device", help="mic device index or name (see `vocalis devices`)")
     run.add_argument("--output-device", help="speaker device index or name")
+    run.add_argument(
+        "--metrics",
+        action="store_true",
+        help="show where each turn's latency went, and a summary on hangup",
+    )
     run.set_defaults(handler=_run)
 
     check = commands.add_parser(

@@ -134,3 +134,33 @@ async def test_real_providers_are_served_with_icons():
 async def test_unknown_agent_is_a_404(client):
     assert (await client.get("/agents/nope")).status_code == 404
     assert (await client.put("/agents/nope", json={"config": VALID_CONFIG})).status_code == 404
+
+
+async def test_starting_a_call_needs_a_slug_or_a_config(client):
+    response = await client.post("/calls", json={"sdp": "v=0", "type": "offer"})
+
+    assert response.status_code == 422
+    assert "slug or config" in response.json()["detail"]
+
+
+async def test_calling_an_invalid_config_is_refused_before_answering(client, agent_config):
+    agent_config["nodes"][2]["provider"] = "gpt"
+
+    response = await client.post(
+        "/calls", json={"sdp": "v=0", "type": "offer", "config": agent_config}
+    )
+
+    assert response.status_code == 422
+    assert 'unknown llm provider "gpt"' in response.json()["detail"]["issues"][0]["message"]
+
+
+async def test_no_calls_are_live_to_begin_with(client):
+    assert (await client.get("/calls")).json() == []
+
+
+async def test_events_for_an_unknown_call(client):
+    assert (await client.get("/calls/nope/events")).status_code == 404
+
+
+async def test_hanging_up_an_unknown_call(client):
+    assert (await client.post("/calls/nope/hangup")).status_code == 404

@@ -43,6 +43,22 @@ Set `VOCALIS_API_URL` if the runtime isn't on `http://localhost:8000`.
 | `lib/agent/validate.ts` | Canvas-side checks while editing                       |
 | `lib/providers.ts`    | Reads the provider plugins from `/providers`             |
 
+## Test calls
+
+**Test call** places a WebRTC call from the browser to the runtime: your microphone
+goes in, the agent's voice comes back, and the transcript and per-turn latency stream
+in beside the canvas as it happens. Each node shows what it cost on the last turn, and
+the panel breaks the turn down stage by stage — including the time no service owns.
+
+An agent can be called before it's ever saved: the canvas sends the config it has.
+
+The runtime needs UDP for WebRTC, so run it on the host while developing:
+
+```bash
+docker compose -f ../deploy/docker-compose.yml up -d postgres
+uv run uvicorn vocalis.api.app:app --port 8000
+```
+
 ## Saving and versions
 
 Save writes a new version through the API; the dropdown lists the history, and picking

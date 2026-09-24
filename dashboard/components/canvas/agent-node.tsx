@@ -3,6 +3,7 @@
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { KeyRound, TriangleAlert } from "lucide-react";
 
+import { useCallState } from "@/components/canvas/call-context";
 import { useProviders } from "@/components/canvas/providers-context";
 import type { AgentNode as AgentNodeType } from "@/lib/agent/flow";
 import { PORTS, type PortType } from "@/lib/schema/ports";
@@ -16,6 +17,8 @@ const PORT_COLOR: Record<PortType, string> = {
 
 export function AgentNode({ id, data, selected }: NodeProps<AgentNodeType>) {
   const provider = useProviders().find((p) => p.type === data.type && p.id === data.provider);
+  const call = useCallState();
+  const latencyMs = call?.byNode[id];
   const stage = STAGE[data.type];
   const ports = PORTS[data.type];
 
@@ -67,7 +70,16 @@ export function AgentNode({ id, data, selected }: NodeProps<AgentNodeType>) {
           </div>
         </div>
 
-        {provider === undefined ? (
+        {latencyMs !== undefined ? (
+          // What this node cost on the last turn of the live call.
+          <span
+            className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium"
+            style={{ background: `${stage.color}22`, color: stage.color }}
+            title="last turn"
+          >
+            {latencyMs} ms
+          </span>
+        ) : provider === undefined ? (
           <TriangleAlert className="size-4 shrink-0 text-destructive" />
         ) : provider.env?.length ? (
           <KeyRound className="size-3.5 shrink-0 text-muted-foreground/70" />

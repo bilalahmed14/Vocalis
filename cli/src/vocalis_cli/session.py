@@ -7,16 +7,28 @@ from pipecat.transports.base_transport import BaseTransport
 from pipecat.workers.runner import WorkerRunner
 
 from vocalis import CompiledAgent
+from vocalis.tracing import CallTrace, CallTracer
+from vocalis_cli.metrics import summary, turn_line, waterfall
 
 
 async def run_session(
     agent: CompiledAgent,
     transport: BaseTransport,
     echo: Callable[[str], None] = print,
-) -> None:
+    metrics: bool = False,
+) -> CallTrace:
+    """Run the agent until the user hangs up, and return what each turn cost."""
+    tracer = CallTracer(
+        agent,
+        on_turn=(lambda turn: echo("\n".join([turn_line(turn), *waterfall(turn)])))
+        if metrics
+        else None,
+    )
+
     worker = PipelineWorker(
         agent.pipeline(transport),
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
+        observers=tracer.observers,
     )
 
     user = agent.context_aggregator.user()
@@ -34,3 +46,7 @@ async def run_session(
             echo(f"agent > {message.content}{suffix}")
 
     await WorkerRunner(handle_sigint=True).run(worker)
+
+    if metrics:
+        echo("\n".join(summary(tracer.call)))
+    return tracer.call

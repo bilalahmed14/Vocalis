@@ -10,7 +10,7 @@ dependencies = [
     "asyncpg>=0.30",
     "fastapi>=0.118",
     "jsonschema>=4.23",
-    "pipecat-ai[anthropic,cartesia,deepgram,elevenlabs,groq,openai,silero]>=1.10,<2",
+    "pipecat-ai[anthropic,cartesia,deepgram,elevenlabs,groq,openai,silero,webrtc]>=1.10,<2",
     "sqlalchemy[asyncio]>=2.0",
     "uvicorn[standard]>=0.34",
 ]

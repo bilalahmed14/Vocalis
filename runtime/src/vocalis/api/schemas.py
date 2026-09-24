@@ -69,3 +69,31 @@ class ProviderOut(BaseModel):
     needs_vad: bool = False
     params: dict[str, Any]
     icon: str | None = None
+
+
+class CallIn(BaseModel):
+    """A browser's WebRTC offer, plus which agent should answer it."""
+
+    sdp: str
+    type: str
+    pc_id: str | None = None
+    restart_pc: bool | None = None
+    slug: str | None = None
+    config: dict[str, Any] | None = None
+
+
+class CallOut(BaseModel):
+    """The answer the browser needs to complete the connection."""
+
+    sdp: str
+    type: str
+    pc_id: str
+    call_id: str
+
+
+class CallSummaryOut(BaseModel):
+    id: str
+    agent_name: str
+    slug: str | None
+    state: str
+    turns: int

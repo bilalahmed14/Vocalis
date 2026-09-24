@@ -31,6 +31,7 @@ examples/broken.json: invalid agent config (4 problems)
 | `providers.py` | Discovers plugins in `/providers`, validates params, loads adapters |
 | `compiler.py`  | Runs all checks, builds processors, wires the `Pipeline`         |
 | `store/`       | Postgres tables and the agent/version store                      |
+| `tracing/`     | Per-turn latency, mapped onto the agent's nodes                  |
 | `api/`         | FastAPI app the dashboard talks to                               |
 
 ## The API
@@ -52,6 +53,21 @@ docker compose -f deploy/docker-compose.yml up -d --build   # Postgres + the API
 Saving runs the same checks as `vocalis run`, so the database only ever holds configs
 that compile; an invalid one comes back as a 422 listing the nodes at fault. Versions
 are immutable, and restoring writes a new version rather than rewinding history.
+
+## Tracing
+
+```python
+tracer = CallTracer(agent)
+worker = PipelineWorker(agent.pipeline(transport), observers=tracer.observers, ...)
+# ...after the call
+tracer.call.percentile(0.5)      # median time to first audio
+tracer.call.slowest_stages()     # what to fix first
+```
+
+Pipecat measures where a turn's time goes; the tracer maps each measurement back to
+the node that owns it, so a slow stage names a box on the canvas. Time no service
+owns is kept as its own stage rather than dropped, because that is usually where the
+latency actually is.
 
 ## Tests
 

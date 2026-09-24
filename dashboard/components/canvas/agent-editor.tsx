@@ -17,6 +17,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
 import { AgentNode } from "@/components/canvas/agent-node";
+import { CallPanel } from "@/components/canvas/call-panel";
+import { CallProvider } from "@/components/canvas/call-context";
+import { useCall } from "@/components/canvas/use-call";
 import { Inspector } from "@/components/canvas/inspector";
 import { Palette } from "@/components/canvas/palette";
 import { ProvidersProvider, useProviders } from "@/components/canvas/providers-context";
@@ -62,6 +65,7 @@ function Editor({
   const [saved, setSaved] = useState(initialSaved);
   const [versions, setVersions] = useState(initialVersions);
   const [state, setState] = useState<SaveState>({ kind: "idle" });
+  const call = useCall();
   const { screenToFlowPosition } = useReactFlow();
   const router = useRouter();
 
@@ -237,6 +241,7 @@ function Editor({
     issues.filter((issue) => issue.nodeId === id).map((issue) => issue.message);
 
   return (
+    <CallProvider value={call}>
     <div className="flex min-h-0 flex-1 flex-col">
       <Toolbar
         name={meta.name}
@@ -250,6 +255,11 @@ function Editor({
         onExport={exportJson}
         onOpenVersion={(version) => void openVersion(version)}
         onRestore={(version) => void restore(version)}
+        call={{
+          status: call.status,
+          onStart: () => call.start(agent, saved?.slug),
+          onStop: call.stop,
+        }}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -311,6 +321,8 @@ function Editor({
         />
       </div>
 
+      <CallPanel />
+
       {issues.length > 0 ? (
         <footer className="max-h-32 shrink-0 overflow-y-auto border-t border-border bg-surface/80 px-4 py-2.5">
           <ul className="space-y-1">
@@ -329,5 +341,6 @@ function Editor({
         </footer>
       ) : null}
     </div>
+    </CallProvider>
   );
 }

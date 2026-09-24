@@ -49,6 +49,17 @@ VOCALIS_API_PORT=8010 VOCALIS_DASHBOARD_PORT=3010 docker compose -f deploy/docke
 Provider API keys come from `.env` at the repo root (copy `.env.example`). The file is
 optional: the API runs without it, and only starting a call needs the keys.
 
+## Browser calls and Docker
+
+Saving, validating and browsing agents work fine in the container. **Placing a test
+call does not**: WebRTC needs UDP, and the compose file maps only TCP. Until that's
+addressed, run the API on the host for calls:
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d postgres
+uv run uvicorn vocalis.api.app:app --port 8000
+```
+
 ## Everyday commands
 
 ```bash

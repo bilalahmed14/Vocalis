@@ -5,6 +5,7 @@ import {
   Download,
   History,
   Phone,
+  PhoneOff,
   Save,
   TriangleAlert,
   Upload,
@@ -30,6 +31,7 @@ export function Toolbar({
   onExport,
   onOpenVersion,
   onRestore,
+  call,
 }: {
   name: string;
   onNameChange: (name: string) => void;
@@ -42,6 +44,7 @@ export function Toolbar({
   onExport: () => void;
   onOpenVersion: (version: number) => void;
   onRestore: (version: number) => void;
+  call: { status: string; onStart: () => void; onStop: () => void };
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const latest = versions[0]?.version;
@@ -132,15 +135,23 @@ export function Toolbar({
           <Save className="size-4" />
           {state.kind === "saving" ? "Saving…" : saved ? "Save version" : "Save"}
         </Button>
-        <Button
-          size="sm"
-          disabled
-          title="Browser test calls arrive in the next phase"
-          className="gap-1.5"
-        >
-          <Phone className="size-4" />
-          Test call
-        </Button>
+        {call.status === "live" || call.status === "connecting" ? (
+          <Button size="sm" variant="destructive" onClick={call.onStop} className="gap-1.5">
+            <PhoneOff className="size-4" />
+            {call.status === "connecting" ? "Connecting…" : "End call"}
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={call.onStart}
+            disabled={issueCount > 0}
+            title={issueCount > 0 ? "Fix the problems first" : "Call this agent from your browser"}
+            className="gap-1.5"
+          >
+            <Phone className="size-4" />
+            Test call
+          </Button>
+        )}
       </div>
     </header>
   );

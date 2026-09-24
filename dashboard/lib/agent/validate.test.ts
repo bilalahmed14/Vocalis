@@ -75,7 +75,7 @@ describe("validateAgent", () => {
     config.nodes[3].provider = "elevenlab";
 
     expect(messages(config)).toEqual([
-      'node "tts": unknown tts provider "elevenlab" (available: cartesia, elevenlabs)',
+      'node "tts": unknown tts provider "elevenlab" (available: cartesia, deepgram, elevenlabs, kokoro)',
     ]);
   });
 

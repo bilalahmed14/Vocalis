@@ -4,22 +4,29 @@ The runtime owns the database so there is one implementation of the rules: /vali
 runs the same checks as `vocalis run`, and nothing is stored that wouldn't compile.
 """
 
+import json
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pipecat.transports.smallwebrtc.request_handler import SmallWebRTCRequest
 
 from vocalis.api.schemas import (
     AgentOut,
     AgentSummaryOut,
+    CallIn,
+    CallOut,
+    CallSummaryOut,
     ConfigIn,
     IssueOut,
     ProviderOut,
     ValidationOut,
     VersionOut,
 )
+from vocalis.calls import CallManager
 from vocalis.compiler import validate
 from vocalis.config import parse_config
 from vocalis.issues import ConfigError
@@ -33,9 +40,13 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.registry = registry or ProviderRegistry.from_directory()
+        app.state.calls = CallManager(app.state.registry)
         if store is not None:
             app.state.store = store
-            yield
+            try:
+                yield
+            finally:
+                await app.state.calls.shutdown()
             return
 
         engine = create_engine()
@@ -43,6 +54,7 @@ def create_app(
         try:
             yield
         finally:
+            await app.state.calls.shutdown()
             await engine.dispose()
 
     app = FastAPI(title="Vocalis", version="0.1.0", lifespan=lifespan)
@@ -60,6 +72,9 @@ def create_app(
 
     def get_registry(request: Request) -> ProviderRegistry:
         return request.app.state.registry
+
+    def get_calls(request: Request) -> CallManager:
+        return request.app.state.calls
 
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:
@@ -152,6 +167,63 @@ def create_app(
         slug: str, version: int, store: AgentStore = Depends(get_store)
     ) -> AgentOut:
         return AgentOut(**vars(await found(store.restore(slug, version))))
+
+    @app.get("/calls", response_model=list[CallSummaryOut])
+    async def list_calls(calls: CallManager = Depends(get_calls)) -> list[CallSummaryOut]:
+        return [CallSummaryOut(**call.snapshot()) for call in calls.calls]
+
+    @app.post("/calls", response_model=CallOut)
+    async def start_call(
+        body: CallIn,
+        calls: CallManager = Depends(get_calls),
+        store: AgentStore = Depends(get_store),
+        registry: ProviderRegistry = Depends(get_registry),
+    ) -> CallOut:
+        """Answer a browser's offer and put the agent on the line.
+
+        Takes either a saved agent's slug or a config straight from the canvas, so an
+        agent can be called before it has ever been saved.
+        """
+        if body.config is not None:
+            raw = body.config
+        elif body.slug:
+            raw = (await found(store.get(body.slug))).config
+        else:
+            raise HTTPException(status_code=422, detail="pass either slug or config")
+
+        check(raw, registry)
+        answer = await calls.start(
+            parse_config(raw),
+            SmallWebRTCRequest(
+                sdp=body.sdp, type=body.type, pc_id=body.pc_id, restart_pc=body.restart_pc
+            ),
+            slug=body.slug,
+        )
+        if not answer:
+            raise HTTPException(status_code=503, detail="could not establish the call")
+        return CallOut(**answer, call_id=answer["pc_id"])
+
+    @app.get("/calls/{call_id}/events")
+    async def call_events(call_id: str, calls: CallManager = Depends(get_calls)) -> Response:
+        """Transcript and per-turn latency as they happen, as server-sent events."""
+        call = calls.get(call_id)
+        if call is None:
+            raise HTTPException(status_code=404, detail=f"no call {call_id}")
+
+        async def stream():
+            async for event in call.watch():
+                yield f"data: {json.dumps(event)}\n\n"
+
+        return StreamingResponse(
+            stream(),
+            media_type="text/event-stream",
+            headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
+        )
+
+    @app.post("/calls/{call_id}/hangup", status_code=204)
+    async def hangup(call_id: str, calls: CallManager = Depends(get_calls)) -> None:
+        if not await calls.hangup(call_id):
+            raise HTTPException(status_code=404, detail=f"no call {call_id}")
 
     return app
 
