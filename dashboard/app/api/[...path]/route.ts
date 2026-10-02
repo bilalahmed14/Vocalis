@@ -7,7 +7,8 @@
 const RUNTIME = process.env.VOCALIS_API_URL ?? "http://localhost:8000";
 
 async function proxy(request: Request, path: string[]): Promise<Response> {
-  const url = new URL(`${RUNTIME}/${path.join("/")}`);
+  // Next hands back decoded segments; re-encode so ids survive the hop.
+  const url = new URL(`${RUNTIME}/${path.map(encodeURIComponent).join("/")}`);
   url.search = new URL(request.url).search;
 
   const response = await fetch(url, {

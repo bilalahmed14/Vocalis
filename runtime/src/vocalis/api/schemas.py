@@ -93,7 +93,60 @@ class CallOut(BaseModel):
 
 class CallSummaryOut(BaseModel):
     id: str
+    pc_id: str
     agent_name: str
     slug: str | None
     state: str
     turns: int
+
+
+class CallLogOut(BaseModel):
+    """One call that happened."""
+
+    id: str
+    agent_name: str
+    agent_slug: str | None
+    agent_version: int | None
+    started_at: datetime
+    ended_at: datetime | None
+    turn_count: int
+    interrupted_turns: int
+    p50_ms: int | None
+    p95_ms: int | None
+
+
+class CallLogDetailOut(BaseModel):
+    call: CallLogOut
+    config: dict[str, Any]
+    turns: list[dict[str, Any]]
+    messages: list[dict[str, Any]]
+
+
+class AgentCallStatsOut(BaseModel):
+    calls: int
+    turns: int
+    median_ms: int | None
+
+
+class TemplateOut(BaseModel):
+    """A starting point for a new agent."""
+
+    id: str
+    name: str
+    description: str = ""
+    needs_keys: list[str] = []
+    config: dict[str, Any]
+
+
+class OverviewOut(BaseModel):
+    """The home page: how the workspace has been behaving lately."""
+
+    agents: int
+    calls: int
+    turns: int
+    p50_ms: int | None
+    p95_ms: int | None
+    interrupted_share: float
+    daily: list[dict[str, Any]]
+    slowest_stages: list[dict[str, Any]]
+    recent: list[CallLogOut]

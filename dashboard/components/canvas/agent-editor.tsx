@@ -295,7 +295,7 @@ function Editor({
             proOptions={{ hideAttribution: false }}
             className="bg-background"
           >
-            <Background variant={BackgroundVariant.Dots} gap={18} size={1} className="opacity-60" />
+            <Background variant={BackgroundVariant.Lines} gap={24} size={1} className="opacity-30" />
             <Controls showInteractive={false} className="!shadow-lg" />
           </ReactFlow>
 

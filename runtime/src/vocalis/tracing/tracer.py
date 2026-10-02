@@ -18,6 +18,7 @@ from pipecat.observers.user_bot_latency_observer import (
 
 from vocalis.compiler import CompiledAgent
 from vocalis.tracing.model import CallTrace, Stage, TurnTrace
+from vocalis.tracing.throughput import ThroughputObserver
 
 
 class CallTracer:
@@ -35,6 +36,7 @@ class CallTracer:
 
         self._latency = UserBotLatencyObserver()
         self._turns = TurnTrackingObserver()
+        self._throughput = ThroughputObserver()
         self._interrupted: dict[int, bool] = {}
         self._turn_number = 0
 
@@ -52,9 +54,10 @@ class CallTracer:
 
     @property
     def observers(self) -> list[BaseObserver]:
-        return [self._latency, self._turns]
+        return [self._latency, self._turns, self._throughput]
 
     def _record(self, breakdown: LatencyBreakdown) -> None:
+        work = self._throughput.take()
         stages = tuple(
             Stage(
                 key=contribution.key,
@@ -62,6 +65,11 @@ class CallTracer:
                 owner=contribution.owner,
                 secs=contribution.duration_secs,
                 node_id=self._node_for(contribution.owner, contribution.owner_kind),
+                throughput=(
+                    work[contribution.owner].rate(contribution.duration_secs)
+                    if contribution.owner in work
+                    else {}
+                ),
             )
             for contribution in breakdown.contributions
         )

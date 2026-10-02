@@ -1,107 +1,173 @@
 # Vocalis
 
-Open-source visual voice agent builder. Patch STT, LLM and TTS providers together
-like cables on an audio patchbay, test calls in the browser, and see live latency
-per node. Built on [Pipecat](https://github.com/pipecat-ai/pipecat). Self-hostable
-with one command.
+**A benchmark harness for voice pipelines.** Patch any model into any stage, place a
+real call, and see exactly where the milliseconds went.
 
-> **Status:** early development. Phase 1 (engine and CLI) is done, and the canvas can
-> build and export agents. Test calls and live metrics are next.
+Built on [Pipecat](https://github.com/pipecat-ai/pipecat). Runs anywhere Docker runs.
 
-## Principles
+---
 
-- **The agent config (JSON) is the core contract.** The canvas edits it, the runtime
-  executes it, and the CLI runs it without the UI.
-- **Every node shows live metrics.** Nothing is a black box.
-- **Providers are plugins.** Adding one means one Python file plus one JSON schema.
+## The problem
 
-## Repo layout
+A voice agent is a relay race: voice activity detection hands to speech-to-text,
+which hands to a model, which hands to a voice. Each leg has its own vendor, its own
+latency, and its own failure mode — and the caller only ever experiences the sum.
 
-| Path         | What lives there                                               |
-| ------------ | -------------------------------------------------------------- |
-| `runtime/`   | Pipecat worker and HTTP API: configs, pipelines, saved agents    |
-| `dashboard/` | Next.js canvas and test-call UI                                |
-| `schema/`    | JSON Schema for agent configs (source of truth, shared by both) |
-| `providers/` | Provider plugins (Python adapter + node schema + icon)         |
-| `cli/`       | `vocalis run agent.json`                                       |
-| `deploy/`    | `docker-compose.yml`                                           |
+So when a reply takes three seconds, the useful question isn't "is it slow?" It's
+**which leg, and by how much?** Provider dashboards can't answer that: each one sees
+only its own hop. Neither can the frameworks, which are built to run pipelines rather
+than measure them. The time nobody owns — silence a VAD waits out, a grace window for
+a late transcript, a turn detector deciding you've finished speaking — belongs to no
+vendor at all, and that is usually where the seconds are.
 
-## Stack
+## What Vocalis does
 
-- **Runtime:** Python 3.12, Pipecat, FastAPI, SmallWebRTC transport
-- **Dashboard:** Next.js (App Router), TypeScript, React Flow, Tailwind, shadcn/ui
-- **Storage:** Postgres (agents, versions, call logs), Redis (live metrics pub/sub)
-- **Dev:** Docker Compose, uv, pnpm, pytest, Playwright
+Every turn is broken into named stages that **add up to the total**, each attributed
+to the node that owns it:
 
-## Roadmap
+```
+turn 2: 843 ms to first audio
+     120 ms  ████████                    endpointing wait     [config: VAD stop_secs]
+      96 ms  ██████                      transcription        [stt]  1.9x realtime
+     284 ms  ███████████████████         LLM inference        [llm]  62.5 tok/s
+     343 ms  ████████████████████████    speech synthesis     [tts]  380 chars/s
 
-1. **Engine:** config schema, pipeline compiler, providers, CLI
-2. **Canvas:** React Flow editor with typed ports and schema-driven forms
-3. **Test call + live metrics:** browser WebRTC calls with per-node latency
-4. **Hot-swap:** replace a provider mid-call at the next turn boundary
-5. **Audio lab nodes:** noise suppression, VAD tuning, gain, scopes
-6. **Ship:** `docker compose up`, examples, contributor guide, CI
+4 turns   p50 861 ms   p95 1204 ms
+```
+
+Three things fall out of that shape:
+
+- **Nothing hides between the stages.** The first row is a setting, not a service.
+  Measuring this repo's own example found a **900 ms grace window** nobody had set
+  and a turn detector stalling **three seconds** on utterances it judged unfinished.
+- **Throughput sits beside latency**, because a model that answers in four words
+  isn't faster than one that answers in forty — it's terser. Tokens per second for a
+  model, characters per second for a voice, and a realtime factor for speech
+  generation, where below 1× means it can never keep up with a live call.
+- **Every call stores the config that produced it**, so two runs are comparable even
+  after you've edited the agent.
+
+## Bring your own model
+
+Every stage accepts a **custom endpoint**, so a model you're serving yourself can be
+measured in a real conversation, beside providers you already trust:
+
+```json
+{
+  "id": "llm",
+  "type": "llm",
+  "provider": "custom",
+  "system_prompt": "Answer in one short sentence.",
+  "params": {
+    "base_url": "http://localhost:8000/v1",
+    "model": "my-model",
+    "api_key_env": "MY_MODEL_API_KEY"
+  }
+}
+```
+
+That covers vLLM, llama.cpp, LM Studio, SGLang, TGI and anything else speaking the
+OpenAI shape — chat completions for `llm`, transcriptions for `stt`, speech for
+`tts`. Keys are *named*, never embedded: the config says which environment variable
+to read, so it stays safe to share.
+
+Swap one stage, call again, compare the logs. That's the whole workflow.
 
 ## Quickstart
 
-Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
-
-```bash
-uv sync
-cp .env.example .env      # add keys for the providers your agent uses
-uv run vocalis run examples/basic.json
-```
-
-`examples/basic.json` uses Deepgram, OpenAI and Cartesia, so it needs those three
-keys. Speak into your mic (headphones recommended) and press Ctrl+C to hang up. API
-keys are only ever read from the environment, never from agent configs.
-
-Other commands: `vocalis validate <agent.json>`, `vocalis providers`,
-`vocalis devices`. See [cli/README.md](cli/README.md).
-
-## Run the whole thing
+Requires [Docker](https://docs.docker.com/get-started/) (Desktop, Colima, OrbStack —
+any of them).
 
 ```bash
 docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
-One command brings up the canvas, the API and Postgres, migrations included. Open
-[localhost:3000](http://localhost:3000): drag providers from the palette, patch them
-together (only matching ports connect), edit each node in the inspector, and save. You
-need API keys only to place a call. See [deploy/README.md](deploy/README.md).
+Open [localhost:3000](http://localhost:3000). One command brings up the canvas, the
+API and Postgres, migrations included.
 
-To work on the canvas itself, run it from source against the same API:
+**No API keys?** Start from the **Local** template: Silero VAD, Moonshine speech to
+text, a model through Ollama, and Kokoro speech — all on your machine, nothing to
+sign up for. Or run it from the terminal, no browser at all:
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d postgres api
-pnpm --dir dashboard install && pnpm --dir dashboard dev
+uv sync --extra local
+uv run vocalis run examples/local.json --metrics
 ```
 
-## Providers
+## What's in the box
 
-| Stage | Providers                                  |
-| ----- | ------------------------------------------ |
-| VAD   | Silero (local)                             |
-| STT   | Deepgram, Whisper (local, `uv sync --extra whisper`) |
-| LLM   | OpenAI (and OpenAI-compatible), Anthropic, Groq |
-| TTS   | ElevenLabs, Cartesia                       |
+| Stage | Providers |
+| ----- | --------- |
+| Voice activity | Silero |
+| Speech to text | Deepgram, Whisper (local), Moonshine (local), **your own endpoint** |
+| Language model | OpenAI, Anthropic, Groq, Ollama (local), **your own endpoint** |
+| Text to speech | Cartesia, ElevenLabs, Deepgram, Kokoro (local), **your own endpoint** |
 
-Adding one takes a folder with a manifest, an adapter and an icon; see
-[providers/README.md](providers/README.md).
+Adding one is a folder: a manifest, an adapter, an icon. The manifest drives the
+palette, the settings form and the validation, so nothing in the dashboard needs
+touching. See [providers/README.md](providers/README.md).
+
+## How it works
+
+**The config is the contract.** A JSON file describes the nodes and the cables
+between them. The canvas edits it, the runtime compiles it into a Pipecat pipeline,
+the CLI runs it without a browser, and every call log keeps a copy. Its
+[JSON Schema](schema/) is the single source of truth — the dashboard's TypeScript
+types are generated from it, and the port rules that decide which cables may connect
+are read from it by both sides.
+
+**Problems name the node.** Validation runs the same checks whether you're editing on
+the canvas, saving through the API, or running from the terminal:
+
+```
+examples/broken.json: invalid agent config (2 problems)
+  - node "llm": "vad" outputs audio but "llm" takes text input
+  - node "tts": unknown tts provider "elevenlab" (available: cartesia, deepgram, elevenlabs, kokoro)
+```
+
+**Measurement is an observer**, not a fork. Vocalis wraps Pipecat's own latency and
+turn observers and maps every measurement back to a node on the canvas, so it
+composes with a pipeline you already have.
+
+## Repo layout
+
+| Path | What lives there |
+| ---- | ---------------- |
+| `schema/` | JSON Schema for agent configs and provider manifests — the contract |
+| `runtime/` | Compiler, tracing, call storage, HTTP API |
+| `providers/` | Provider plugins: manifest + adapter + icon |
+| `dashboard/` | The canvas, call logs and analytics (Next.js) |
+| `cli/` | `vocalis run agent.json --metrics` |
+| `deploy/` | `docker compose up` |
+| `examples/` | Agents you can run today, including a fully local one |
+
+## Status
+
+Working today: the canvas, versioned agents, browser test calls, per-turn tracing
+with throughput, call logs, custom endpoints, and a local no-keys path.
+
+Next: **comparison runs** — a scripted caller, the same script against two configs,
+and a verdict on whether a change actually helped. Then **full duplex**, where the
+agent listens while it speaks, measured on the same harness as the cascade.
+
+Not planned: telephony, hosting, auth. This is an instrument, not a platform.
 
 ## Development
 
-```bash
-uv sync --all-extras              # Python workspace, including local Whisper
-uv run pytest                     # runtime, provider and CLI tests
-uv run ruff check .               # lint
-uv run schema/validate.py         # check examples against the schema
+Python 3.12 with [uv](https://docs.astral.sh/uv/), Node with pnpm.
 
-docker compose -f deploy/docker-compose.yml up -d postgres   # database tests need this
+```bash
+uv sync --all-extras              # runtime, CLI, local models
+uv run pytest                     # database tests skip without Postgres
+uv run ruff check .
 
 pnpm --dir dashboard install
-pnpm --dir dashboard test         # canvas tests
+pnpm --dir dashboard test
 pnpm --dir dashboard gen:schema   # regenerate TS types after a schema change
+```
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d postgres   # for the database tests
 ```
 
 ## License

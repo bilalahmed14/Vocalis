@@ -1,0 +1,47 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "custom",
+  "type": "llm",
+  "name": "Your own model",
+  "description": "Any OpenAI-compatible chat endpoint: vLLM, llama.cpp, LM Studio, SGLang, TGI, or a model you're serving yourself. Point it at the URL and call it to see how it behaves under a real conversation.",
+  "docs_url": "https://platform.openai.com/docs/api-reference/chat",
+  "env": [],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["base_url", "model"],
+    "properties": {
+      "base_url": {
+        "title": "Endpoint",
+        "description": "Where your server listens, including the version path. From Docker, reach your machine as host.docker.internal.",
+        "type": "string",
+        "examples": ["http://localhost:8000/v1", "http://host.docker.internal:1234/v1"]
+      },
+      "model": {
+        "title": "Model",
+        "description": "The model name your server expects.",
+        "type": "string",
+        "examples": ["my-model", "Qwen/Qwen3-4B-Instruct"]
+      },
+      "api_key_env": {
+        "title": "API key variable",
+        "description": "Name of an environment variable holding the key, if your server needs one. The key itself never goes in the config.",
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$",
+        "examples": ["MY_MODEL_API_KEY"]
+      },
+      "temperature": {
+        "title": "Temperature",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2
+      },
+      "max_tokens": {
+        "title": "Max tokens",
+        "description": "Upper bound on the length of each reply. Shorter replies reach the caller sooner.",
+        "type": "integer",
+        "minimum": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "custom",
+  "type": "tts",
+  "name": "Your own model",
+  "description": "Any OpenAI-compatible speech endpoint, such as a voice model you're serving yourself. Audio is streamed back as it's generated.",
+  "docs_url": "https://platform.openai.com/docs/api-reference/audio/createSpeech",
+  "env": [],
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["base_url", "model", "voice"],
+    "properties": {
+      "base_url": {
+        "title": "Endpoint",
+        "description": "Where your server listens, including the version path.",
+        "type": "string",
+        "examples": ["http://localhost:8880/v1", "http://host.docker.internal:8880/v1"]
+      },
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "examples": ["tts-1", "kokoro"]
+      },
+      "voice": {
+        "title": "Voice",
+        "type": "string",
+        "examples": ["alloy", "af_heart"]
+      },
+      "api_key_env": {
+        "title": "API key variable",
+        "description": "Name of an environment variable holding the key, if your server needs one.",
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$",
+        "examples": ["MY_MODEL_API_KEY"]
+      },
+      "speed": {
+        "title": "Speed",
+        "type": "number",
+        "minimum": 0.25,
+        "maximum": 4
+      }
+    }
+  }
+}

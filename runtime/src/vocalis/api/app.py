@@ -15,14 +15,19 @@ from fastapi.responses import StreamingResponse
 from pipecat.transports.smallwebrtc.request_handler import SmallWebRTCRequest
 
 from vocalis.api.schemas import (
+    AgentCallStatsOut,
     AgentOut,
     AgentSummaryOut,
     CallIn,
+    CallLogDetailOut,
+    CallLogOut,
     CallOut,
     CallSummaryOut,
     ConfigIn,
     IssueOut,
+    OverviewOut,
     ProviderOut,
+    TemplateOut,
     ValidationOut,
     VersionOut,
 )
@@ -30,8 +35,15 @@ from vocalis.calls import CallManager
 from vocalis.compiler import validate
 from vocalis.config import parse_config
 from vocalis.issues import ConfigError
+from vocalis.paths import REPO_ROOT
 from vocalis.providers import ProviderRegistry
-from vocalis.store import AgentNotFound, AgentStore, create_engine, create_session_factory
+from vocalis.store import (
+    AgentNotFound,
+    AgentStore,
+    CallStore,
+    create_engine,
+    create_session_factory,
+)
 
 
 def create_app(
@@ -40,9 +52,10 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.registry = registry or ProviderRegistry.from_directory()
-        app.state.calls = CallManager(app.state.registry)
         if store is not None:
             app.state.store = store
+            app.state.call_store = None
+            app.state.calls = CallManager(app.state.registry)
             try:
                 yield
             finally:
@@ -50,7 +63,10 @@ def create_app(
             return
 
         engine = create_engine()
-        app.state.store = AgentStore(create_session_factory(engine))
+        sessions = create_session_factory(engine)
+        app.state.store = AgentStore(sessions)
+        app.state.call_store = CallStore(sessions)
+        app.state.calls = CallManager(app.state.registry, call_store=app.state.call_store)
         try:
             yield
         finally:
@@ -76,6 +92,12 @@ def create_app(
     def get_calls(request: Request) -> CallManager:
         return request.app.state.calls
 
+    def get_call_store(request: Request) -> CallStore:
+        call_store = request.app.state.call_store
+        if call_store is None:
+            raise HTTPException(status_code=503, detail="call logs need a database")
+        return call_store
+
     @app.get("/healthz")
     async def healthz() -> dict[str, str]:
         return {"status": "ok"}
@@ -98,6 +120,30 @@ def create_app(
             )
             for spec in registry
         ]
+
+    @app.get("/templates", response_model=list[TemplateOut])
+    async def templates(registry: ProviderRegistry = Depends(get_registry)) -> list[TemplateOut]:
+        """The example agents, offered as starting points for a new one."""
+        found = []
+        for path in sorted((REPO_ROOT / "examples").glob("*.json")):
+            config = json.loads(path.read_text())
+            needs = {
+                name
+                for node in config["nodes"]
+                for spec in [registry.get(node["type"], node["provider"])]
+                if spec
+                for name in spec.env
+            }
+            found.append(
+                TemplateOut(
+                    id=path.stem,
+                    name=config["name"],
+                    description=config.get("description", ""),
+                    needs_keys=sorted(needs),
+                    config=config,
+                )
+            )
+        return found
 
     @app.post("/validate", response_model=ValidationOut)
     async def validate_config(
@@ -184,10 +230,12 @@ def create_app(
         Takes either a saved agent's slug or a config straight from the canvas, so an
         agent can be called before it has ever been saved.
         """
+        version = None
         if body.config is not None:
             raw = body.config
         elif body.slug:
-            raw = (await found(store.get(body.slug))).config
+            saved = await found(store.get(body.slug))
+            raw, version = saved.config, saved.version
         else:
             raise HTTPException(status_code=422, detail="pass either slug or config")
 
@@ -198,10 +246,12 @@ def create_app(
                 sdp=body.sdp, type=body.type, pc_id=body.pc_id, restart_pc=body.restart_pc
             ),
             slug=body.slug,
+            version=version,
+            raw_config=raw,
         )
         if not answer:
             raise HTTPException(status_code=503, detail="could not establish the call")
-        return CallOut(**answer, call_id=answer["pc_id"])
+        return CallOut(**answer)
 
     @app.get("/calls/{call_id}/events")
     async def call_events(call_id: str, calls: CallManager = Depends(get_calls)) -> Response:
@@ -219,6 +269,45 @@ def create_app(
             media_type="text/event-stream",
             headers={"cache-control": "no-cache", "x-accel-buffering": "no"},
         )
+
+    @app.get("/stats", response_model=OverviewOut)
+    async def overview(days: int = 14, logs: CallStore = Depends(get_call_store)) -> OverviewOut:
+        stats = await logs.overview(days=days)
+        return OverviewOut(
+            **{key: value for key, value in vars(stats).items() if key != "recent"},
+            recent=[CallLogOut(**vars(call)) for call in stats.recent],
+        )
+
+    @app.get("/logs", response_model=list[CallLogOut])
+    async def list_logs(
+        agent: str | None = None,
+        limit: int = 50,
+        logs: CallStore = Depends(get_call_store),
+    ) -> list[CallLogOut]:
+        return [CallLogOut(**vars(call)) for call in await logs.list(slug=agent, limit=limit)]
+
+    @app.get("/logs/{log_id}", response_model=CallLogDetailOut)
+    async def get_log(log_id: str, logs: CallStore = Depends(get_call_store)) -> CallLogDetailOut:
+        detail = await logs.get(log_id)
+        if detail is None:
+            raise HTTPException(status_code=404, detail=f"no call {log_id}")
+        return CallLogDetailOut(
+            call=CallLogOut(**vars(detail.summary)),
+            config=detail.config,
+            turns=detail.turns,
+            messages=detail.messages,
+        )
+
+    @app.delete("/logs/{log_id}", status_code=204)
+    async def delete_log(log_id: str, logs: CallStore = Depends(get_call_store)) -> None:
+        if not await logs.delete(log_id):
+            raise HTTPException(status_code=404, detail=f"no call {log_id}")
+
+    @app.get("/agents/{slug}/calls", response_model=AgentCallStatsOut)
+    async def agent_call_stats(
+        slug: str, logs: CallStore = Depends(get_call_store)
+    ) -> AgentCallStatsOut:
+        return AgentCallStatsOut(**await logs.stats(slug))
 
     @app.post("/calls/{call_id}/hangup", status_code=204)
     async def hangup(call_id: str, calls: CallManager = Depends(get_calls)) -> None:

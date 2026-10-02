@@ -20,14 +20,17 @@ def test_expected_providers_are_installed():
         ("stt", "deepgram"),
         ("stt", "whisper"),
         ("stt", "moonshine"),
+        ("stt", "custom"),
         ("llm", "openai"),
         ("llm", "anthropic"),
         ("llm", "groq"),
         ("llm", "ollama"),
+        ("llm", "custom"),
         ("tts", "elevenlabs"),
         ("tts", "cartesia"),
         ("tts", "deepgram"),
         ("tts", "kokoro"),
+        ("tts", "custom"),
     }
 
 

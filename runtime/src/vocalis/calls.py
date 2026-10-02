@@ -7,6 +7,7 @@ subscribers as it occurs, so the dashboard can show a call while it's still goin
 
 import asyncio
 import contextlib
+import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -26,6 +27,7 @@ from pipecat.workers.runner import WorkerRunner
 from vocalis.compiler import compile_agent
 from vocalis.config import AgentConfig
 from vocalis.providers import ProviderRegistry
+from vocalis.store import CallRecorder, CallStore
 from vocalis.tracing import CallTracer, TurnTrace
 
 CallState = Literal["connecting", "live", "ended"]
@@ -40,6 +42,8 @@ class Call:
     """One live call, and everything the dashboard wants to know about it."""
 
     id: str
+    """Ours, not Pipecat's: `pc_id` contains a '#', which truncates a URL."""
+    pc_id: str
     agent_name: str
     slug: str | None
     tracer: CallTracer
@@ -48,6 +52,7 @@ class Call:
     turns: list[dict[str, Any]] = field(default_factory=list)
     _subscribers: list[asyncio.Queue] = field(default_factory=list)
     _task: asyncio.Task | None = None
+    _recorder: CallRecorder | None = None
 
     def publish(self, event: dict[str, Any]) -> None:
         """Send an event to every watcher. Never blocks the pipeline."""
@@ -58,6 +63,8 @@ class Call:
             self.turns.append(event)
         for queue in self._subscribers:
             queue.put_nowait(event)
+        if self._recorder and event["type"] in ("turn", "transcript"):
+            self._recorder.record(event)
 
     async def watch(self) -> AsyncIterator[dict[str, Any]]:
         """Replay what has happened so far, then follow along live."""
@@ -78,6 +85,7 @@ class Call:
     def snapshot(self) -> dict[str, Any]:
         return {
             "id": self.id,
+            "pc_id": self.pc_id,
             "agent_name": self.agent_name,
             "slug": self.slug,
             "state": self.state,
@@ -88,10 +96,16 @@ class Call:
 class CallManager:
     """Starts calls, keeps the live ones, and cleans up after them."""
 
-    def __init__(self, registry: ProviderRegistry | None = None):
+    def __init__(
+        self,
+        registry: ProviderRegistry | None = None,
+        handler=None,
+        call_store: CallStore | None = None,
+    ):
         self._registry = registry
         self._calls: dict[str, Call] = {}
-        self._handler = SmallWebRTCRequestHandler()
+        self._handler = handler or SmallWebRTCRequestHandler()
+        self._store = call_store
 
     @property
     def calls(self) -> list[Call]:
@@ -101,7 +115,12 @@ class CallManager:
         return self._calls.get(call_id)
 
     async def start(
-        self, config: AgentConfig, request: SmallWebRTCRequest, slug: str | None = None
+        self,
+        config: AgentConfig,
+        request: SmallWebRTCRequest,
+        slug: str | None = None,
+        version: int | None = None,
+        raw_config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Answer a browser's offer and run the agent for as long as the call lasts.
 
@@ -110,16 +129,24 @@ class CallManager:
         """
         agent = compile_agent(config, self._registry)
 
+        call_id = uuid.uuid4().hex[:12]
+
         async def on_connection(connection: SmallWebRTCConnection) -> None:
-            call = self._create(connection.pc_id, config, agent, slug)
+            call = self._create(call_id, connection.pc_id, config, agent, slug)
+            if self._store is not None and raw_config is not None:
+                await self._store.start(call_id, raw_config, slug=slug, version=version)
+                call._recorder = CallRecorder(self._store, call_id)
             call._task = asyncio.create_task(self._run(call, connection, agent))
 
-        answer = await self._handler.handle_web_request(on_connection, request)
-        return answer or {}
+        answer = await self._handler.handle_web_request(request, on_connection)
+        return {**answer, "call_id": call_id} if answer else {}
 
-    def _create(self, call_id: str, config: AgentConfig, agent, slug: str | None) -> Call:
+    def _create(
+        self, call_id: str, pc_id: str, config: AgentConfig, agent, slug: str | None
+    ) -> Call:
         call = Call(
             id=call_id,
+            pc_id=pc_id,
             agent_name=config.name,
             slug=slug,
             tracer=CallTracer(agent, on_turn=lambda turn: self._on_turn(call_id, turn)),
@@ -145,6 +172,7 @@ class CallManager:
                         "owner": stage.owner,
                         "node_id": stage.node_id,
                         "ms": round(stage.ms),
+                        **stage.throughput,
                     }
                     for stage in turn.stages
                 ],
@@ -196,6 +224,8 @@ class CallManager:
             call.state = "ended"
             call.publish({"type": "state", "state": "ended"})
             self._calls.pop(call.id, None)
+            if call._recorder:
+                await call._recorder.close()
 
     async def hangup(self, call_id: str) -> bool:
         call = self._calls.get(call_id)
@@ -208,6 +238,8 @@ class CallManager:
         call.state = "ended"
         call.publish({"type": "state", "state": "ended"})
         self._calls.pop(call_id, None)
+        if call._recorder:
+            await call._recorder.close()
         return True
 
     async def shutdown(self) -> None:

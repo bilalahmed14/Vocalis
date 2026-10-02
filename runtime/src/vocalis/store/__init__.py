@@ -8,8 +8,9 @@ from vocalis.store.agents import (
     VersionSummary,
     slugify,
 )
+from vocalis.store.calls import CallDetail, CallRecorder, CallStore, CallSummary, Overview
 from vocalis.store.database import create_engine, create_session_factory, database_url
-from vocalis.store.models import Agent, AgentVersion, Base
+from vocalis.store.models import Agent, AgentVersion, Base, CallMessage, CallRecord, CallTurn
 
 __all__ = [
     "Agent",
@@ -18,6 +19,14 @@ __all__ = [
     "AgentSummary",
     "AgentVersion",
     "Base",
+    "CallDetail",
+    "CallMessage",
+    "CallRecord",
+    "CallRecorder",
+    "CallStore",
+    "CallSummary",
+    "CallTurn",
+    "Overview",
     "SavedAgent",
     "VersionSummary",
     "create_engine",

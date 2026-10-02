@@ -22,6 +22,9 @@ export type TurnStage = {
   owner: string;
   node_id: string | null;
   ms: number;
+  tokens_per_sec?: number;
+  chars_per_sec?: number;
+  realtime_factor?: number;
 };
 
 export type TurnEvent = {
@@ -123,7 +126,7 @@ export class Call {
   }
 
   private listen(callId: string): void {
-    this.events = new EventSource(`/api/calls/${callId}/events`);
+    this.events = new EventSource(`/api/calls/${encodeURIComponent(callId)}/events`);
     this.events.onmessage = (message) => {
       const event = JSON.parse(message.data);
       if (event.type === "state") this.handlers.onStatus(event.state === "live" ? "live" : "ended");
@@ -139,7 +142,9 @@ export class Call {
     this.events = null;
 
     if (this.callId) {
-      await fetch(`/api/calls/${this.callId}/hangup`, { method: "POST" }).catch(() => null);
+      await fetch(`/api/calls/${encodeURIComponent(this.callId)}/hangup`, {
+        method: "POST",
+      }).catch(() => null);
       this.callId = null;
     }
 

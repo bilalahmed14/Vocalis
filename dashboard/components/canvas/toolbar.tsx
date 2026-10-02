@@ -51,19 +51,23 @@ export function Toolbar({
   const viewingOld = saved != null && latest != null && saved.version !== latest;
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-      <div className="flex min-w-0 items-center gap-2 text-sm">
-        <Link href="/" className="shrink-0 text-muted-foreground hover:text-foreground">
-          Agents
-        </Link>
-        <span className="text-muted-foreground/50">/</span>
-        <input
-          aria-label="Agent name"
-          value={name}
-          onChange={(event) => onNameChange(event.target.value)}
-          className="w-52 rounded-md border border-transparent bg-transparent px-1.5 py-1 font-medium outline-none hover:border-border focus:border-ring"
-        />
-      </div>
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
+      {/* A saved agent shows its name in the page header; a draft needs one here. */}
+      {saved ? null : (
+        <div className="flex min-w-0 items-center gap-2 text-sm">
+          <Link href="/" className="shrink-0 text-muted-foreground hover:text-foreground">
+            Agents
+          </Link>
+          <span className="text-muted-foreground/50">/</span>
+          <input
+            aria-label="Agent name"
+            value={name}
+            onChange={(event) => onNameChange(event.target.value)}
+            placeholder="Untitled agent"
+            className="w-52 rounded-md border border-transparent bg-transparent px-1.5 py-1 font-medium outline-none hover:border-border focus:border-ring"
+          />
+        </div>
+      )}
 
       <span
         className={cn(

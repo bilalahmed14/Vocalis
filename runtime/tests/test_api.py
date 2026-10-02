@@ -164,3 +164,14 @@ async def test_events_for_an_unknown_call(client):
 
 async def test_hanging_up_an_unknown_call(client):
     assert (await client.post("/calls/nope/hangup")).status_code == 404
+
+
+async def test_templates_come_from_the_examples(client):
+    templates = (await client.get("/templates")).json()
+
+    ids = [template["id"] for template in templates]
+    assert "local" in ids and "basic" in ids
+    local = next(t for t in templates if t["id"] == "local")
+    assert local["config"]["nodes"][0]["type"] == "vad"
+    # The local template is the one a stranger can run without signing up anywhere.
+    assert local["needs_keys"] == []

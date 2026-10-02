@@ -31,13 +31,16 @@ Set `VOCALIS_API_URL` if the runtime isn't on `http://localhost:8000`.
 
 ## Layout
 
-| Path                  | What it does                                            |
-| --------------------- | -------------------------------------------------------- |
-| `app/page.tsx`        | Saved agents                                             |
-| `app/agents/[slug]/`  | The canvas for one saved agent, with its version history |
-| `app/api/[...path]/`  | Proxy to the runtime API                                 |
-| `components/canvas/`  | Editor, custom node, palette, inspector, params form, toolbar |
-| `lib/api.ts`          | Typed client for the runtime API                         |
+| Path                          | What it does                                          |
+| ----------------------------- | ------------------------------------------------------ |
+| `app/page.tsx`                | Saved agents                                           |
+| `app/new/`                    | Start from a template or an empty canvas               |
+| `app/agents/[slug]/`          | One agent: Pipeline, Calls and Settings tabs           |
+| `app/calls/`                  | Every call, and one call's turns and transcript        |
+| `app/api/[...path]/`          | Proxy to the runtime API                               |
+| `components/canvas/`          | Editor, custom node, palette, inspector, toolbar       |
+| `components/calls/`           | Call table, waterfall, stat tiles                      |
+| `lib/api.ts`                  | Typed client for the runtime API                       |
 | `lib/agent/flow.ts`   | Config to canvas graph and back, in pipeline order       |
 | `lib/agent/config.ts` | Canonical JSON export                                    |
 | `lib/agent/validate.ts` | Canvas-side checks while editing                       |
@@ -58,6 +61,15 @@ The runtime needs UDP for WebRTC, so run it on the host while developing:
 docker compose -f ../deploy/docker-compose.yml up -d postgres
 uv run uvicorn vocalis.api.app:app --port 8000
 ```
+
+## Call logs
+
+Every test call is written down: the config exactly as it ran, each turn's stages,
+and the transcript. The **Calls** tab on an agent shows its history with headline
+numbers; a call's page shows every turn's waterfall next to what was said.
+
+The config is stored per call on purpose — an agent gets edited between calls, and
+comparing two runs is meaningless without knowing what each one actually used.
 
 ## Saving and versions
 

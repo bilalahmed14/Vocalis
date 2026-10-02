@@ -1,6 +1,5 @@
-import { AgentEditor } from "@/components/canvas/agent-editor";
+import { NewAgent } from "@/components/agents/new-agent";
 import { RuntimeDown } from "@/components/runtime-down";
-import { emptyConfig } from "@/lib/agent/config";
 import { api, apiReachable } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +7,6 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   if (!(await apiReachable())) return <RuntimeDown />;
 
-  const providers = await api.providers();
-  return <AgentEditor providers={providers} config={emptyConfig()} />;
+  const templates = await api.templates();
+  return <NewAgent templates={templates} />;
 }

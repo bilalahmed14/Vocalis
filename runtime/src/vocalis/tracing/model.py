@@ -5,8 +5,22 @@ later the agent starts. Every stage in between is named, and the stages add up t
 total, so nothing hides in the gaps between services.
 """
 
+import math
 from dataclasses import dataclass, field
 from statistics import median
+
+
+def percentile(values: list[float], fraction: float) -> float | None:
+    """Nearest-rank percentile: the smallest value at or above that share of samples.
+
+    Calls are short, so interpolating between samples would invent precision that
+    isn't there; the p95 of four turns should be a turn that actually happened.
+    """
+    if not values:
+        return None
+    ordered = sorted(values)
+    rank = max(1, math.ceil(fraction * len(ordered)))
+    return ordered[min(rank, len(ordered)) - 1]
 
 
 @dataclass(frozen=True)
@@ -22,6 +36,8 @@ class Stage:
     owner: str
     secs: float
     node_id: str | None = None
+    """What the service produced in that time: tokens/sec, chars/sec or realtime factor."""
+    throughput: dict[str, float] = field(default_factory=dict)
 
     @property
     def ms(self) -> float:
@@ -66,12 +82,7 @@ class CallTrace:
         return [turn.total_ms for turn in self.turns]
 
     def percentile(self, fraction: float) -> float:
-        """A rough percentile of turn latency; calls are too short for anything fancier."""
-        if not self.turns:
-            return 0.0
-        ordered = sorted(self.totals_ms)
-        index = min(len(ordered) - 1, int(round(fraction * (len(ordered) - 1))))
-        return ordered[index]
+        return percentile(self.totals_ms, fraction) or 0.0
 
     def slowest_stages(self, limit: int = 5) -> list[tuple[str, float]]:
         """Median cost of each stage across turns, worst first.

@@ -116,3 +116,42 @@ def test_interruptions_are_recorded(agent):
     tracer._record(breakdown_for(agent, contribution("llm_ttfb", "x", 0.2)))
 
     assert tracer.call.turns[0].interrupted
+
+
+def test_throughput_turns_usage_into_a_rate():
+    """Latency alone can't separate a fast model from a terse one."""
+    from vocalis.tracing.throughput import Work
+
+    assert Work(tokens=120).rate(2.0) == {"tokens_per_sec": 60.0}
+    assert Work(characters=380).rate(1.0) == {"chars_per_sec": 380.0}
+    # Above 1 means speech was generated faster than it plays, which a call needs.
+    assert Work(audio_seconds=3.4).rate(2.0) == {"realtime_factor": 1.7}
+    assert Work().rate(1.0) == {}
+    assert Work(tokens=10).rate(0) == {}
+
+
+async def test_stages_carry_what_the_model_produced(agent):
+    tracer = CallTracer(agent)
+    names = {compiled.node.id: compiled.processor.name for compiled in agent.nodes}
+    from vocalis.tracing.throughput import Work
+
+    tracer._throughput._work = {names["llm"]: Work(tokens=90)}
+
+    tracer._record(breakdown_for(agent, contribution("llm_ttfb", names["llm"], 1.5)))
+
+    [stage] = tracer.call.turns[0].stages
+    assert stage.throughput == {"tokens_per_sec": 60.0}
+
+
+async def test_usage_is_not_carried_into_the_next_turn(agent):
+    from vocalis.tracing.throughput import Work
+
+    tracer = CallTracer(agent)
+    names = {compiled.node.id: compiled.processor.name for compiled in agent.nodes}
+    tracer._throughput._work = {names["llm"]: Work(tokens=90)}
+
+    tracer._record(breakdown_for(agent, contribution("llm_ttfb", names["llm"], 1.0)))
+    tracer._record(breakdown_for(agent, contribution("llm_ttfb", names["llm"], 1.0)))
+
+    assert tracer.call.turns[0].stages[0].throughput == {"tokens_per_sec": 90.0}
+    assert tracer.call.turns[1].stages[0].throughput == {}

@@ -49,6 +49,11 @@ docker compose -f deploy/docker-compose.yml up -d --build   # Postgres + the API
 | `GET` | `/agents/{slug}/versions` | version history |
 | `GET` | `/agents/{slug}/versions/{n}` | one old config |
 | `POST` | `/agents/{slug}/versions/{n}/restore` | copy an old version forward |
+| `GET` | `/templates` | example agents, as starting points |
+| `POST` | `/calls` | answer a browser's WebRTC offer and run the agent |
+| `GET` | `/calls/{id}/events` | transcript and per-turn latency, as they happen |
+| `GET` | `/logs` | past calls, newest first (`?agent=slug`) |
+| `GET` | `/logs/{id}` | one call: config, turns, transcript |
 
 Saving runs the same checks as `vocalis run`, so the database only ever holds configs
 that compile; an invalid one comes back as a 422 listing the nodes at fault. Versions

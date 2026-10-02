@@ -1,0 +1,48 @@
+{
+  "$schema": "../../../schema/provider.v1.schema.json",
+  "id": "custom",
+  "type": "stt",
+  "name": "Your own model",
+  "description": "Any OpenAI-compatible transcription endpoint, such as a Whisper server you're running yourself. Each utterance is sent once the VAD marks it finished, so it needs a vad node.",
+  "docs_url": "https://platform.openai.com/docs/api-reference/audio/createTranscription",
+  "env": [],
+  "needs_vad": true,
+  "params": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["base_url", "model"],
+    "properties": {
+      "base_url": {
+        "title": "Endpoint",
+        "description": "Where your server listens, including the version path.",
+        "type": "string",
+        "examples": ["http://localhost:8000/v1", "http://host.docker.internal:8000/v1"]
+      },
+      "model": {
+        "title": "Model",
+        "type": "string",
+        "examples": ["whisper-1", "Systran/faster-whisper-small"]
+      },
+      "api_key_env": {
+        "title": "API key variable",
+        "description": "Name of an environment variable holding the key, if your server needs one.",
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$",
+        "examples": ["MY_MODEL_API_KEY"]
+      },
+      "language": {
+        "title": "Language",
+        "type": "string",
+        "default": "en"
+      },
+      "ttfs_p99_latency": {
+        "title": "Final transcript p99 (s)",
+        "description": "How long the pipeline waits after you stop speaking for a late transcript. Set it near your model's real p99: too high adds dead air to every turn.",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 2,
+        "default": 0.5
+      }
+    }
+  }
+}

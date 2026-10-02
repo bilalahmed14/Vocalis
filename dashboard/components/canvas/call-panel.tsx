@@ -4,6 +4,7 @@ import { Phone, TriangleAlert } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { useCallState } from "@/components/canvas/call-context";
+import { throughputLabel } from "@/lib/throughput";
 
 const BAR_WIDTH = 120;
 
@@ -102,6 +103,11 @@ export function CallPanel() {
                 <span className="min-w-0 truncate text-muted-foreground">
                   {stage.label}
                   <span className="ml-1 opacity-60">[{stage.node_id ?? stage.owner}]</span>
+                  {throughputLabel(stage) ? (
+                    <span className="ml-1.5 font-mono text-foreground/70">
+                      {throughputLabel(stage)}
+                    </span>
+                  ) : null}
                 </span>
               </div>
             );
