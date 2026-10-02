@@ -12,6 +12,11 @@ export type CallState = {
   turns: TurnEvent[];
   /** Latency per node from the most recent turn, for the badges on the canvas. */
   byNode: Record<string, number>;
+  /** The browser blocked the agent's voice; a click is needed to let it through. */
+  audioBlocked: boolean;
+  allowAudio: () => void;
+  /** Loudness of the agent's voice as it arrives, 0 to 1. */
+  audioLevel: number;
   start: (config: AgentConfig, slug?: string) => void;
   stop: () => void;
 };
@@ -21,6 +26,8 @@ export function useCall(): CallState {
   const [detail, setDetail] = useState<string>();
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [turns, setTurns] = useState<TurnEvent[]>([]);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const call = useRef<Call | null>(null);
 
   const handlers = useMemo(
@@ -31,6 +38,8 @@ export function useCall(): CallState {
       },
       onTranscript: (line: TranscriptLine) => setTranscript((lines) => [...lines, line]),
       onTurn: (turn: TurnEvent) => setTurns((all) => [...all, turn]),
+      onAudioBlocked: setAudioBlocked,
+      onLevel: setAudioLevel,
     }),
     [],
   );
@@ -40,11 +49,15 @@ export function useCall(): CallState {
       setTranscript([]);
       setTurns([]);
       setDetail(undefined);
+      setAudioBlocked(false);
+      setAudioLevel(0);
       call.current = new Call(handlers);
       void call.current.start(config, slug);
     },
     [handlers],
   );
+
+  const allowAudio = useCallback(() => void call.current?.allowAudio(), []);
 
   const stop = useCallback(() => {
     void call.current?.stop();
@@ -57,5 +70,16 @@ export function useCall(): CallState {
 
   const byNode = turns.length ? turns[turns.length - 1].by_node : {};
 
-  return { status, detail, transcript, turns, byNode, start, stop };
+  return {
+    status,
+    detail,
+    transcript,
+    turns,
+    byNode,
+    audioBlocked,
+    allowAudio,
+    audioLevel,
+    start,
+    stop,
+  };
 }

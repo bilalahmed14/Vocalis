@@ -55,12 +55,28 @@ the panel breaks the turn down stage by stage — including the time no service 
 
 An agent can be called before it's ever saved: the canvas sends the config it has.
 
-The runtime needs UDP for WebRTC, so run it on the host while developing:
+The runtime needs UDP for WebRTC, so run it on the host while developing. Nothing
+loads `.env` for you, and a provider without its key refuses the call:
 
 ```bash
 docker compose -f ../deploy/docker-compose.yml up -d postgres
-uv run uvicorn vocalis.api.app:app --port 8000
+uv run --env-file ../.env uvicorn vocalis.api.app:app --port 8000
 ```
+
+### Hearing the agent
+
+The voice arrives on the same peer connection and plays through an audio element in
+the page. Two things make that fail quietly, so the panel reports both:
+
+- **A browser that won't start audio on its own.** `autoplay` is a request, not a
+  guarantee; Safari and a Chrome without autoplay permission reject it, and the
+  rejected promise is the only notice. The header then offers **Let the agent be
+  heard**, which starts playback from your click.
+- **A meter next to the status**, showing the agent's voice as it arrives. Flat while
+  the transcript fills in means the audio never reached the browser. Moving while you
+  hear nothing means it did, and the output device or its volume is what's swallowing
+  it — worth checking first if you muted your speakers to stop the agent interrupting
+  itself.
 
 ## Call logs
 

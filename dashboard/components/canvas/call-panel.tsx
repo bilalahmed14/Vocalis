@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, TriangleAlert } from "lucide-react";
+import { Phone, TriangleAlert, Volume2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { useCallState } from "@/components/canvas/call-context";
@@ -40,6 +40,31 @@ export function CallPanel() {
               {call.status === "connecting" ? "connecting…" : `${call.turns.length} turns`}
             </span>
           )}
+          <div className="ml-auto flex items-center gap-3">
+            {call.audioBlocked ? (
+              <button
+                type="button"
+                onClick={call.allowAudio}
+                className="flex items-center gap-1.5 rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <Volume2 className="size-3" />
+                Let the agent be heard
+              </button>
+            ) : null}
+            {/* Proof the voice is arriving: flat here is the network, moving here is the speaker. */}
+            <span
+              className="flex items-center gap-1.5 text-muted-foreground"
+              title="The agent's voice arriving in this browser"
+            >
+              <Volume2 className="size-3" />
+              <span className="h-1 w-16 overflow-hidden rounded-full bg-border">
+                <span
+                  className="block h-full rounded-full bg-primary transition-[width] duration-100"
+                  style={{ width: `${Math.min(100, Math.round(call.audioLevel * 400))}%` }}
+                />
+              </span>
+            </span>
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">

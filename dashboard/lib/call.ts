@@ -39,6 +39,10 @@ export type CallHandlers = {
   onStatus: (status: CallStatus, detail?: string) => void;
   onTranscript: (line: TranscriptLine) => void;
   onTurn: (turn: TurnEvent) => void;
+  /** The agent's voice arrived but the browser refused to start it. */
+  onAudioBlocked: (blocked: boolean) => void;
+  /** Loudness of the agent's voice as it arrives, 0 to 1, ten times a second. */
+  onLevel: (level: number) => void;
 };
 
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -50,12 +54,16 @@ export class Call {
   private mic: MediaStream | null = null;
   private events: EventSource | null = null;
   private audio: HTMLAudioElement | null = null;
+  private meter: { ctx: AudioContext; timer: number } | null = null;
   private callId: string | null = null;
 
   constructor(private handlers: CallHandlers) {}
 
   async start(config: AgentConfig, slug?: string): Promise<void> {
     this.handlers.onStatus("connecting");
+    // Built before the first await, while the click that started the call still
+    // counts as a user gesture: browsers refuse to start audio without one.
+    this.audio = this.createSpeaker();
     try {
       // Some browsers never settle this promise when the permission prompt can't be
       // shown, so a hung microphone reports as a failure rather than "connecting…".
@@ -67,6 +75,8 @@ export class Call {
         MIC_TIMEOUT_MS,
       );
     } catch {
+      this.audio.remove();
+      this.audio = null;
       this.handlers.onStatus("failed", "no microphone: allow access for this site and try again");
       return;
     }
@@ -75,10 +85,11 @@ export class Call {
     this.pc = pc;
     for (const track of this.mic.getTracks()) pc.addTrack(track, this.mic);
 
-    this.audio = new Audio();
-    this.audio.autoplay = true;
     pc.ontrack = (event) => {
-      if (this.audio) this.audio.srcObject = event.streams[0];
+      if (!this.audio) return;
+      this.audio.srcObject = event.streams[0];
+      void this.play();
+      this.startMeter(event.streams[0]);
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed") this.handlers.onStatus("failed", "connection failed");
@@ -152,9 +163,73 @@ export class Call {
     this.mic = null;
     this.pc?.close();
     this.pc = null;
-    if (this.audio) this.audio.srcObject = null;
+    if (this.meter) {
+      clearInterval(this.meter.timer);
+      void this.meter.ctx.close();
+      this.meter = null;
+    }
+    this.handlers.onLevel(0);
+    if (this.audio) {
+      this.audio.srcObject = null;
+      this.audio.remove();
+    }
     this.audio = null;
+    this.handlers.onAudioBlocked(false);
     this.handlers.onStatus("ended");
+  }
+
+  /** Start playback after the listener clicks, for a browser that blocked autoplay. */
+  async allowAudio(): Promise<void> {
+    await this.play();
+  }
+
+  /** An element in the document, because a detached one is not a playback target. */
+  private createSpeaker(): HTMLAudioElement {
+    const audio = document.createElement("audio");
+    audio.autoplay = true;
+    audio.setAttribute("aria-hidden", "true");
+    audio.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+    document.body.append(audio);
+    return audio;
+  }
+
+  /**
+   * Measure the agent's voice as it arrives, so silence can be told apart: a flat
+   * meter means nothing reached the browser, a moving one means the browser has the
+   * audio and the output device or its volume is what's swallowing it.
+   */
+  private startMeter(stream: MediaStream): void {
+    if (this.meter) return; // `ontrack` can fire again on renegotiation.
+    const ctx = new AudioContext();
+    void ctx.resume();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+
+    const samples = new Float32Array(analyser.fftSize);
+    const timer = window.setInterval(() => {
+      analyser.getFloatTimeDomainData(samples);
+      let total = 0;
+      for (const sample of samples) total += sample * sample;
+      this.handlers.onLevel(Math.sqrt(total / samples.length));
+    }, 100);
+
+    this.meter = { ctx, timer };
+  }
+
+  /**
+   * `autoplay` alone is a request, not a guarantee: Safari and a Chrome without
+   * autoplay permission reject it, and a rejected promise is the only notice. Left
+   * unhandled it looks exactly like a broken agent — transcript, no voice.
+   */
+  private async play(): Promise<void> {
+    if (!this.audio) return;
+    try {
+      await this.audio.play();
+      this.handlers.onAudioBlocked(false);
+    } catch {
+      this.handlers.onAudioBlocked(true);
+    }
   }
 }
 
