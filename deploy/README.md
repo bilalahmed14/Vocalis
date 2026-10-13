@@ -1,19 +1,41 @@
 # Running Vocalis with Docker
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d --build
+./deploy/up.sh
 ```
 
-That brings up Postgres, the Vocalis API and the canvas, and applies database
+That brings up Postgres, the canvas and the Vocalis runtime, and applies database
 migrations on start, so a fresh machine needs nothing else:
 
 - the canvas at [localhost:3000](http://localhost:3000)
-- the API at [localhost:8000/docs](http://localhost:8000/docs)
+- the runtime at [localhost:8000/docs](http://localhost:8000/docs)
 
-Provider API keys are only needed to place a call; building and saving agents works
-without them.
+Ctrl+C stops the runtime; Postgres and the canvas keep running until you bring them
+down. Provider API keys are only needed to place a call; building and saving agents
+works without them.
 
-Any Docker works: Docker Desktop, Colima, OrbStack, or Docker Engine on Linux.
+Any Docker works: Docker Desktop, Colima, OrbStack, or Docker Engine on Linux. The
+script also needs [uv](https://docs.astral.sh/uv/), which runs the runtime.
+
+## Why the runtime isn't in a container
+
+A browser call carries its audio over **UDP**, and Docker's published ports are TCP.
+From a container the signalling works perfectly — the call connects, the transcript
+streams, the latency is recorded — and not one millisecond of voice arrives. On
+macOS and Windows there is no way around it either, because the container sits behind
+a virtual machine that forwards TCP only.
+
+So `up.sh` splits the stack where the problem is: Postgres and the canvas stay in
+containers, the runtime runs on your machine, and the canvas is told where to find it
+through `VOCALIS_API_URL`. Media then goes straight from the browser to a process on
+the same machine, which is the one path that always works.
+
+The all-container stack is still there and still useful — building agents, versions,
+call logs, anything that isn't a live call:
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --build
+```
 
 ## What runs
 
@@ -39,26 +61,16 @@ plugins in this repo — add one and rebuild.
 | `VOCALIS_DB_PORT`        | `5432`                  | Host port for Postgres            |
 | `DATABASE_URL`         | the compose `postgres`   | Where the API stores agents         |
 | `VOCALIS_CORS_ORIGINS` | `http://localhost:3000`  | Who may call the API from a browser |
+| `VOCALIS_API_URL`      | the compose `api`        | Where the canvas looks for the runtime |
 
 If a port is already taken on your machine, override it for the run:
 
 ```bash
-VOCALIS_API_PORT=8010 VOCALIS_DASHBOARD_PORT=3010 docker compose -f deploy/docker-compose.yml up -d
+VOCALIS_API_PORT=8010 VOCALIS_DASHBOARD_PORT=3010 ./deploy/up.sh
 ```
 
 Provider API keys come from `.env` at the repo root (copy `.env.example`). The file is
 optional: the API runs without it, and only starting a call needs the keys.
-
-## Browser calls and Docker
-
-Saving, validating and browsing agents work fine in the container. **Placing a test
-call does not**: WebRTC needs UDP, and the compose file maps only TCP. Until that's
-addressed, run the API on the host for calls:
-
-```bash
-docker compose -f deploy/docker-compose.yml up -d postgres
-uv run uvicorn vocalis.api.app:app --port 8000
-```
 
 ## Everyday commands
 

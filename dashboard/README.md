@@ -55,12 +55,19 @@ the panel breaks the turn down stage by stage — including the time no service 
 
 An agent can be called before it's ever saved: the canvas sends the config it has.
 
-The runtime needs UDP for WebRTC, so run it on the host while developing. Nothing
-loads `.env` for you, and a provider without its key refuses the call:
+The runtime needs UDP for WebRTC, so it runs on the host rather than in a container.
+`deploy/up.sh` arranges that for you; for dashboard work, run the canvas yourself and
+let the script bring up the rest:
 
 ```bash
-docker compose -f ../deploy/docker-compose.yml up -d postgres
-uv run --env-file ../.env uvicorn vocalis.api.app:app --port 8000
+./deploy/up.sh                      # Postgres, the runtime, and a containerised canvas
+pnpm dev                            # ...or your own canvas, against the same runtime
+```
+
+With `pnpm dev`, point it at the runtime in `dashboard/.env.local`:
+
+```
+VOCALIS_API_URL=http://localhost:8000
 ```
 
 ### Hearing the agent

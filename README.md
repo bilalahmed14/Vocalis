@@ -5,6 +5,8 @@ real call, and see exactly where the milliseconds went.
 
 Built on [Pipecat](https://github.com/pipecat-ai/pipecat). Runs anywhere Docker runs.
 
+![A call in Vocalis: every turn broken into stages, each one labelled with the node that owns it](docs/images/call.png)
+
 ---
 
 ## The problem
@@ -19,6 +21,8 @@ only its own hop. Neither can the frameworks, which are built to run pipelines r
 than measure them. The time nobody owns — silence a VAD waits out, a grace window for
 a late transcript, a turn detector deciding you've finished speaking — belongs to no
 vendor at all, and that is usually where the seconds are.
+
+![A voice turn as a relay: endpointing, transcription, the model and the voice, each measured on its own](docs/images/pipeline.svg)
 
 ## What Vocalis does
 
@@ -47,6 +51,10 @@ Three things fall out of that shape:
 - **Every call stores the config that produced it**, so two runs are comparable even
   after you've edited the agent.
 
+Across calls it adds up to one ranking: the stage to fix first.
+
+![The overview: time to first audio per day, and a ranking of where the time goes](docs/images/overview.png)
+
 ## Bring your own model
 
 Every stage accepts a **custom endpoint**, so a model you're serving yourself can be
@@ -71,19 +79,28 @@ OpenAI shape — chat completions for `llm`, transcriptions for `stt`, speech fo
 `tts`. Keys are *named*, never embedded: the config says which environment variable
 to read, so it stays safe to share.
 
-Swap one stage, call again, compare the logs. That's the whole workflow.
+Swap one stage, call again, compare the logs. That's the whole workflow — and the
+canvas is where the swapping happens. Cables only connect matching ports, so a
+pipeline that wouldn't run can't be drawn.
+
+![The canvas: a VAD, speech to text, a model and a voice patched into a chain](docs/images/canvas.png)
 
 ## Quickstart
 
 Requires [Docker](https://docs.docker.com/get-started/) (Desktop, Colima, OrbStack —
-any of them).
+any of them) and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d --build
+./deploy/up.sh
 ```
 
 Open [localhost:3000](http://localhost:3000). One command brings up the canvas, the
-API and Postgres, migrations included.
+runtime and Postgres, migrations included.
+
+Postgres and the canvas run in containers; the runtime runs on your machine, because
+a browser call carries its audio over UDP and Docker forwards only TCP. In a container
+the call connects, the transcript appears, and no voice ever arrives — so the piece
+that needs the network moves out, and the rest stays in Docker.
 
 **No API keys?** Start from the **Local** template: Silero VAD, Moonshine speech to
 text, a model through Ollama, and Kokoro speech — all on your machine, nothing to
@@ -146,9 +163,11 @@ composes with a pipeline you already have.
 Working today: the canvas, versioned agents, browser test calls, per-turn tracing
 with throughput, call logs, custom endpoints, and a local no-keys path.
 
-Next: **comparison runs** — a scripted caller, the same script against two configs,
-and a verdict on whether a change actually helped. Then **full duplex**, where the
-agent listens while it speaks, measured on the same harness as the cascade.
+Next: **turn detection as a setting**, so the three seconds a turn detector spends
+deciding you've finished is a number you can move. Then **comparison runs** — a
+scripted caller, the same script against two configs, and a verdict on whether a
+change actually helped. Then **full duplex**, where the agent listens while it
+speaks, measured on the same harness as the cascade.
 
 Not planned: telephony, hosting, auth. This is an instrument, not a platform.
 

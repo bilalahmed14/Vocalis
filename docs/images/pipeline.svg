@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 300" width="1120" height="300" role="img" aria-label="A voice turn as a relay: endpointing, transcription, language model and speech, each stage measured separately, adding up to the time before the caller hears a reply.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,1 L9,5 L0,9" fill="none" stroke="#8f8f8f" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- the span everything is measured against -->
+  <g stroke="#8f8f8f" stroke-width="1" opacity="0.5">
+    <path d="M180,42 L180,54 M968,42 L968,54 M180,48 L968,48" fill="none"/>
+  </g>
+  <text x="574" y="32" text-anchor="middle" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="14" fill="#8f8f8f">time to first audio</text>
+
+  <!-- the caller -->
+  <text x="14" y="126" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8f8f8f">you stop</text>
+  <text x="14" y="144" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8f8f8f">speaking</text>
+  <path d="M126,130 L172,130" fill="none" stroke="#8f8f8f" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+  <!-- stages -->
+  <g font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+    <g>
+      <rect x="180" y="100" width="170" height="62" rx="6" fill="none" stroke="#8f8f8f" stroke-opacity="0.45"/>
+      <text x="196" y="126" font-size="14" fill="#9a9a9a">Voice activity</text>
+      <text x="196" y="146" font-size="11" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#7a7a7a">silero</text>
+      <rect x="180" y="186" width="34" height="5" rx="2.5" fill="#8f8f8f" fill-opacity="0.55"/>
+      <text x="180" y="212" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#8f8f8f">200 ms</text>
+      <text x="180" y="230" font-size="11" fill="#7a7a7a">endpointing wait</text>
+    </g>
+
+    <g>
+      <rect x="386" y="100" width="170" height="62" rx="6" fill="none" stroke="#8f8f8f" stroke-opacity="0.45"/>
+      <text x="402" y="126" font-size="14" fill="#9a9a9a">Speech to text</text>
+      <text x="402" y="146" font-size="11" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#7a7a7a">deepgram · or yours</text>
+      <rect x="386" y="186" width="17" height="5" rx="2.5" fill="#e8a33d"/>
+      <text x="386" y="212" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#8f8f8f">100 ms</text>
+      <text x="386" y="230" font-size="11" fill="#7a7a7a">transcription</text>
+    </g>
+
+    <g>
+      <rect x="592" y="100" width="170" height="62" rx="6" fill="none" stroke="#8f8f8f" stroke-opacity="0.45"/>
+      <text x="608" y="126" font-size="14" fill="#9a9a9a">Language model</text>
+      <text x="608" y="146" font-size="11" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#7a7a7a">ollama · or yours</text>
+      <rect x="592" y="186" width="14" height="5" rx="2.5" fill="#e8a33d"/>
+      <text x="592" y="212" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#8f8f8f">83 ms</text>
+      <text x="592" y="230" font-size="11" fill="#7a7a7a">first token</text>
+    </g>
+
+    <g>
+      <rect x="798" y="100" width="170" height="62" rx="6" fill="none" stroke="#8f8f8f" stroke-opacity="0.45"/>
+      <text x="814" y="126" font-size="14" fill="#9a9a9a">Text to speech</text>
+      <text x="814" y="146" font-size="11" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#7a7a7a">cartesia · or yours</text>
+      <rect x="798" y="186" width="140" height="5" rx="2.5" fill="#e8a33d"/>
+      <text x="798" y="212" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" fill="#8f8f8f">826 ms</text>
+      <text x="798" y="230" font-size="11" fill="#7a7a7a">speech synthesis</text>
+    </g>
+  </g>
+
+  <!-- the hand-offs, where time hides -->
+  <g fill="none" stroke="#8f8f8f" stroke-width="1.4" marker-end="url(#arrow)">
+    <path d="M350,130 L380,130"/>
+    <path d="M556,130 L586,130"/>
+    <path d="M762,130 L792,130"/>
+    <path d="M968,130 L1000,130"/>
+  </g>
+
+  <text x="1008" y="126" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8f8f8f">you hear</text>
+  <text x="1008" y="144" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8f8f8f">a reply</text>
+
+  <text x="180" y="268" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12.5" fill="#7a7a7a">Medians from real calls. Swap one box and every number moves — which is the whole point.</text>
+  <text x="180" y="288" font-family="ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12.5" fill="#7a7a7a">Grey stages belong to no provider: a setting waits that long, and Vocalis names it rather than hiding it.</text>
+</svg>

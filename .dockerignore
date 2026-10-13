@@ -1,0 +1,17 @@
+# Keep the build context small and the image clean. Without this the context is
+# hundreds of megabytes and host `node_modules` lands on top of the ones installed
+# inside the image, which are built for a different platform.
+.git
+.github
+.venv
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.env
+*.log
+docs/images
+deploy/*.md

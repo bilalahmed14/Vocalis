@@ -49,9 +49,14 @@ services:
       dockerfile: deploy/dashboard.Dockerfile
     environment:
       # Server-side only: the browser talks to the dashboard, which proxies the API.
-      VOCALIS_API_URL: http://api:8000
+      # `deploy/up.sh` points this at a runtime on the host, which is what makes
+      # browser calls work; in the all-container stack it stays on the compose network.
+      VOCALIS_API_URL: ${VOCALIS_API_URL:-http://api:8000}
+    # So VOCALIS_API_URL can name the host, on Linux as well as Docker Desktop.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      api:
+      postgres:
         condition: service_healthy
     ports:
       # Override with VOCALIS_DASHBOARD_PORT if 3000 is taken on your machine.
